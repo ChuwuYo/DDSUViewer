@@ -4,26 +4,20 @@
 
 ## ✅ 框架总览
 
-- **前端**：React 18.3 + TypeScript + Vite + ShadcnUI 
+- **前端**：React 18.3 + TypeScript + Vite + Hero UI  
 - **后端**：Go + GraphQL（gqlgen）+ 串口通信（Modbus RTU）  
 - **桌面封装**：Wails（Windows 平台，基于 WebView2）
 
 ---
 
-## ✅ 前端技术栈（推荐集成方式）
+## ✅ 前端技术栈（集成说明）
 
-> 基于 Wails 官方 `react-ts` 模板，手动升级为现代前端栈。组件建议：优先使用现有组件库（如 ShadcnUI）中的现成组件，避免重复造轮子。
+> 项目根目录为 `DDSUViewer`，前端位于 `frontend/`，构建输出为 `frontend/dist/`。组件建议：使用 Hero UI 提供的现成组件（如卡片、表格、输入框），避免重复造轮子。
 
-### 初始化步骤
+### 核心配置步骤
 
-1. 创建项目并进入前端目录  
-   ```bash
-   wails init -n ddsu666-client -t react-ts -d .
-   cd frontend
-   ```
-
-2. 升级 React 与 TypeScript  
-   修改 `package.json`：
+1. 升级 React 与 TypeScript  
+   修改 `frontend/package.json`：
    ```json
    {
      "dependencies": {
@@ -36,12 +30,12 @@
    }
    ```
 
-3. 安装 Vite 并替换构建脚本  
+2. 安装 Vite 并替换构建脚本  
    ```bash
    npm install --save-dev vite
    ```
 
-   修改 `package.json`：
+   修改 `frontend/package.json`：
    ```json
    "scripts": {
      "dev": "vite",
@@ -50,13 +44,33 @@
    }
    ```
 
-4. 添加 ShadcnUI
-   ```bash
-   npx shadcn-ui init
-   npx shadcn-ui add button card input table
-   ```
+3. 集成 Hero UI  
+   按照 [Hero UI 官方安装指南](https://www.heroui.com/docs/guide/installation) 进行配置：
 
-5. 集成 GraphQL 客户端（Apollo 或 urql）  
+   - 安装主库：
+     ```bash
+     npm install @heroui/react
+     ```
+
+   - 添加组件（如 Card、Input、Table）：
+     ```bash
+     npx heroui add card input table
+     ```
+
+   - 在 `frontend/src/main.tsx` 中包裹 `HeroUIProvider`：
+     ```tsx
+     import { HeroUIProvider } from "@heroui/react";
+
+     function App() {
+       return (
+         <HeroUIProvider>
+           {/* 你的组件 */}
+         </HeroUIProvider>
+       );
+     }
+     ```
+
+4. 集成 GraphQL 客户端（Apollo 或 urql）  
    ```bash
    npm install @apollo/client graphql
    # 或者
@@ -80,8 +94,6 @@
   - Subscription：实时推送数据（WebSocket）
     - 使用 goroutine + channel 异步推送
     - 推荐使用 `nhooyr.io/websocket` + pubsub 管理订阅者
-- 配置管理：使用 `spf13/viper` 加载 YAML/ENV，支持热更新
-- 本地存储：使用 SQLite（`gorm` 或 `sqlc`）记录采集数据
 - 错误与重试策略：
   - 超时建议 100–300 ms，重试 2–3 次
   - CRC 错误丢帧
@@ -93,7 +105,7 @@
 
 - 实时数据展示：
   - 显示电压、电流、功率、频率、电能等字段
-  - 使用组件库中的现成表格或卡片组件展示数据
+  - 使用 Hero UI 提供的卡片或表格组件展示数值
   - 不做复杂图表，仅展示字段名称与数值即可
 
 - 串口配置界面：
@@ -133,10 +145,8 @@
 | `poller`           | 周期轮询与调度 |
 | `protocol_detector`| 协议探测与识别 |
 | `parser`           | 浮点解码与异常过滤 |
-| `config`           | 配置加载与热更新 |
 | `graphql`          | gqlgen schema 与 resolver |
 | `pubsub`           | Subscription 推送通道管理 |
-| `storage`          | SQLite 数据存储 |
 | `wails_bridge`     | Wails 与前端通信桥接层
 
 ---
