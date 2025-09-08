@@ -10,6 +10,7 @@
 .amazonq
 .codebuddy
 *~
+.spec-workflow
 
 # OS-specific files
 # -------------------------------
