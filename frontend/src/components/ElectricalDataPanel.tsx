@@ -21,7 +21,7 @@ const DataCard = ({ title, value, unit, color = 'blue' }: {
   unit: string;
   color?: string;
 }) => (
-  <Card.Root 
+  <Card 
     bg="white" 
     shadow="md" 
     borderRadius="xl" 
@@ -30,14 +30,14 @@ const DataCard = ({ title, value, unit, color = 'blue' }: {
     _hover={{ shadow: "lg", transform: "translateY(-2px)" }}
     transition="all 0.2s"
   >
-    <Card.Body p={6}>
+    <CardBody p={6}>
       <Text fontSize="sm" color="gray.600" mb={2} fontWeight="medium">{title}</Text>
       <Text fontSize="3xl" fontWeight="bold" color={value !== undefined ? `${color}.500` : 'gray.400'} mb={1}>
         {value !== undefined ? value.toFixed(3) : '未知'}
       </Text>
       <Text fontSize="sm" color="gray.500" fontWeight="medium">{unit}</Text>
-    </Card.Body>
-  </Card.Root>
+    </CardBody>
+  </Card>
 );
 
 export const ElectricalDataPanel = () => {
