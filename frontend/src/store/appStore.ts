@@ -59,8 +59,9 @@ class AppStore {
       if (this.status.connected) {
         try {
           // 尝试获取真实数据
-          const { GetElectricalData } = await import('../../wailsjs/go/main/App');
-          const realData = await GetElectricalData();
+          // @ts-ignore
+          const { GetElectricalData } = window.go?.main?.App || {};
+          const realData = GetElectricalData ? await GetElectricalData() : null;
           
           if (realData) {
             this.data = {

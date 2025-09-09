@@ -20,6 +20,8 @@ type Poller struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	dataChan chan *registers.ElectricalData
+	lastData *registers.ElectricalData
+	dataMutex sync.RWMutex
 }
 
 // NewPoller 创建轮询器
@@ -129,7 +131,20 @@ func (p *Poller) readElectricalRegisters() *registers.ElectricalData {
 		regData[registers.RegFrequency] = data[28:32]     // 0x200E
 	}
 
-	return registers.ParseElectricalData(regData)
+	parsedData := registers.ParseElectricalData(regData)
+	
+	// 保存最新数据用于电能更新
+	p.dataMutex.Lock()
+	if parsedData != nil {
+		// 保留之前的电能值
+		if p.lastData != nil {
+			parsedData.ActiveEnergy = p.lastData.ActiveEnergy
+		}
+		p.lastData = parsedData
+	}
+	p.dataMutex.Unlock()
+	
+	return parsedData
 }
 
 // readEnergyRegister 读取电能寄存器
@@ -139,7 +154,18 @@ func (p *Poller) readEnergyRegister() {
 		// 处理电能数据
 		energy := registers.ParseFloat32(data)
 		if registers.IsValidFloat32(energy) {
-			// 可以在这里处理电能数据
+			// 更新最新数据中的电能值
+			p.dataMutex.Lock()
+			if p.lastData != nil {
+				p.lastData.ActiveEnergy = energy
+				// 发送更新后的数据
+				select {
+				case p.dataChan <- p.lastData:
+				default:
+					// 通道满时跳过
+				}
+			}
+			p.dataMutex.Unlock()
 		}
 	}
 }

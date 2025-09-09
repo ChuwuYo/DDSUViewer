@@ -17,7 +17,7 @@ export const StatusPanel = () => {
             <Badge 
               colorScheme={status.connected ? 'green' : 'red'}
               variant="solid"
-              minW="60px"
+              px={2}
               textAlign="center"
             >
               {status.connected ? '已连接' : '未连接'}
