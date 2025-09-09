@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Card, 
@@ -7,10 +7,7 @@ import {
   VStack,
   HStack,
   Alert,
-  Select,
   Button,
-  Portal,
-  createListCollection,
 } from '@chakra-ui/react';
 import { GetAvailablePorts, StartPolling, StopPolling, UpdateSerialConfig } from '../../wailsjs/go/main/App';
 import { useAppStore, updateStatus } from '../hooks/usePolling';
@@ -25,9 +22,98 @@ interface SerialConfig {
   slaveID: number;
 }
 
-interface ValueChangeDetails {
-  value: string[];
+interface CustomSelectProps {
+  value: string;
+  options: { label: string; value: string }[];
+  onChange: (value: string) => void;
+  placeholder?: string;
 }
+
+const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div ref={selectRef} style={{ position: 'relative' }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          border: '1px solid #e2e8f0',
+          borderRadius: '6px',
+          fontSize: '14px',
+          backgroundColor: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <span style={{ color: selectedOption ? '#000' : '#a0aec0' }}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <span style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+          ▼
+        </span>
+      </div>
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            backgroundColor: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '6px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            zIndex: 1000,
+            maxHeight: '200px',
+            overflowY: 'auto'
+          }}
+        >
+          {options.map((option) => (
+            <div
+              key={option.value}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                backgroundColor: option.value === value ? '#f7fafc' : 'white',
+                borderBottom: '1px solid #f7fafc'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f7fafc';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = option.value === value ? '#f7fafc' : 'white';
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const SerialConfigPanel = () => {
   const [slaveID, setSlaveID] = useState('0C');
@@ -44,7 +130,6 @@ export const SerialConfigPanel = () => {
   
   const { status } = useAppStore();
   const isConnected = status.connected;
-  
 
   useEffect(() => {
     const loadPorts = async () => {
@@ -168,34 +253,12 @@ export const SerialConfigPanel = () => {
           {/* COM 端口 */}
           <Box>
             <Text fontSize="sm" mb={2} fontWeight="medium" color="gray.700">COM 端口</Text>
-            <Select.Root 
-              collection={createListCollection({ items: ports.map(port => ({ label: port, value: port })) })}
-              value={config?.port ? [config.port] : []}
-              onValueChange={(details: ValueChangeDetails) => handleConfigUpdate('port', details.value[0])}
-              size="sm"
-            >
-              <Select.HiddenSelect />
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText placeholder="选择端口" />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {ports.map(port => (
-                      <Select.Item key={port} item={{ label: port, value: port }}>
-                        {port}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+            <CustomSelect
+              value={config.port}
+              options={ports.map(port => ({ label: port, value: port }))}
+              onChange={(value) => handleConfigUpdate('port', value)}
+              placeholder="选择端口"
+            />
           </Box>
 
           {/* 从站地址 */}
@@ -231,149 +294,57 @@ export const SerialConfigPanel = () => {
           {/* 波特率 */}
           <Box>
             <Text fontSize="sm" mb={2}>波特率</Text>
-            <Select.Root 
-              collection={createListCollection({ items: [
+            <CustomSelect
+              value={config.baudRate.toString()}
+              options={[
                 { label: '4800', value: '4800' },
                 { label: '9600', value: '9600' },
                 { label: '19200', value: '19200' },
                 { label: '38400', value: '38400' },
                 { label: '115200', value: '115200' }
-              ] })}
-              value={[config?.baudRate?.toString() || '9600']}
-              onValueChange={(details: ValueChangeDetails) => handleConfigUpdate('baudRate', parseInt(details.value[0]))}
-              size="sm"
-            >
-              <Select.HiddenSelect />
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {['4800', '9600', '19200', '38400', '115200'].map(rate => (
-                      <Select.Item key={rate} item={{ label: rate, value: rate }}>
-                        {rate}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+              ]}
+              onChange={(value) => handleConfigUpdate('baudRate', parseInt(value))}
+            />
           </Box>
 
           {/* 数据位 */}
           <Box>
             <Text fontSize="sm" mb={2}>数据位</Text>
-            <Select.Root 
-              collection={createListCollection({ items: [
+            <CustomSelect
+              value={config.dataBits.toString()}
+              options={[
                 { label: '7', value: '7' },
                 { label: '8', value: '8' }
-              ] })}
-              value={[config?.dataBits?.toString() || '8']}
-              onValueChange={(details: ValueChangeDetails) => handleConfigUpdate('dataBits', parseInt(details.value[0]))}
-              size="sm"
-            >
-              <Select.HiddenSelect />
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {['7', '8'].map(bits => (
-                      <Select.Item key={bits} item={{ label: bits, value: bits }}>
-                        {bits}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+              ]}
+              onChange={(value) => handleConfigUpdate('dataBits', parseInt(value))}
+            />
           </Box>
 
           {/* 停止位 */}
           <Box>
             <Text fontSize="sm" mb={2}>停止位</Text>
-            <Select.Root 
-              collection={createListCollection({ items: [
+            <CustomSelect
+              value={config.stopBits.toString()}
+              options={[
                 { label: '1', value: '1' },
                 { label: '2', value: '2' }
-              ] })}
-              value={[config?.stopBits?.toString() || '1']}
-              onValueChange={(details: ValueChangeDetails) => handleConfigUpdate('stopBits', parseInt(details.value[0]))}
-              size="sm"
-            >
-              <Select.HiddenSelect />
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {['1', '2'].map(bits => (
-                      <Select.Item key={bits} item={{ label: bits, value: bits }}>
-                        {bits}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+              ]}
+              onChange={(value) => handleConfigUpdate('stopBits', parseInt(value))}
+            />
           </Box>
 
           {/* 校验位 */}
           <Box>
             <Text fontSize="sm" mb={2}>校验位</Text>
-            <Select.Root 
-              collection={createListCollection({ items: [
+            <CustomSelect
+              value={config.parity}
+              options={[
                 { label: 'None', value: 'None' },
                 { label: 'Even', value: 'Even' },
                 { label: 'Odd', value: 'Odd' }
-              ] })}
-              value={[config?.parity || 'None']}
-              onValueChange={(details: ValueChangeDetails) => handleConfigUpdate('parity', details.value[0])}
-              size="sm"
-            >
-              <Select.HiddenSelect />
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {['None', 'Even', 'Odd'].map(parity => (
-                      <Select.Item key={parity} item={{ label: parity, value: parity }}>
-                        {parity}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+              ]}
+              onChange={(value) => handleConfigUpdate('parity', value)}
+            />
           </Box>
 
         </VStack>
