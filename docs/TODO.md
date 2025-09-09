@@ -6,13 +6,13 @@
   - [x] React 18.3.1 + React DOM
   - [x] TypeScript 5.5.4
   - [x] Vite 构建工具配置
-- [x] 集成 Hero UI 组件库
-  - [x] 安装 @heroui/react
-  - [x] 配置 HeroUIProvider
-  - [ ] 添加基础组件 (Card, Input, Table) - 在实际开发界面时添加
-- [x] 集成 GraphQL 客户端
-  - [x] 安装 Apollo Client 或 urql
-  - [ ] 配置 GraphQL 客户端连接 - 需要后端GraphQL服务准备好后配置
+- [ ] 集成 Chakra UI 组件库
+  - [ ] 安装 @chakra-ui/react
+  - [ ] 配置 ChakraProvider
+  - [ ] 添加基础组件 (Card, Input, Select, Button)
+- [ ] 集成 GraphQL 客户端
+  - [ ] 安装 Apollo Client
+  - [ ] 配置 GraphQL 客户端连接
 
 ## 🔌 后端核心模块开发
 

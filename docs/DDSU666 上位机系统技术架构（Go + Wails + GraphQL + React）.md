@@ -4,7 +4,7 @@
 
 ## ✅ 框架总览
 
-- **前端**：React 18.3 + TypeScript + Vite + Hero UI  
+- **前端**：React 18.3 + TypeScript + Vite + Chakra UI  
 - **后端**：Go + GraphQL（gqlgen）+ 单串口通信（Modbus RTU）  
 - **桌面封装**：Wails（Windows 平台，基于 WebView2）
 - **设备支持**：单个 DDSU666 设备，单个串口连接
@@ -13,7 +13,7 @@
 
 ## ✅ 前端技术栈（集成说明）
 
-> 项目根目录为 `DDSUViewer`，前端位于 `frontend/`，构建输出为 `frontend/dist/`。组件建议：使用 Hero UI 提供的现成组件（如卡片、表格、输入框），避免重复造轮子。
+> 项目根目录为 `DDSUViewer`，前端位于 `frontend/`，构建输出为 `frontend/dist/`。组件建议：使用 Chakra UI 提供的现成组件（如卡片、表格、输入框），避免重复造轮子。
 
 ### 核心配置步骤
 
@@ -45,28 +45,23 @@
    }
    ```
 
-3. 集成 Hero UI  
-   按照 [Hero UI 官方安装指南](https://www.heroui.com/docs/guide/installation) 进行配置：
+3. 集成 Chakra UI  
+   按照 [Chakra UI 官方安装指南](https://chakra-ui.com/getting-started) 进行配置：
 
    - 安装主库：
      ```bash
-     npm install @heroui/react
+     npm install @chakra-ui/react @emotion/react @emotion/styled framer-motion
      ```
 
-   - 添加组件（如 Card、Input、Table）：
-     ```bash
-     npx heroui add card input table
-     ```
-
-   - 在 `frontend/src/main.tsx` 中包裹 `HeroUIProvider`：
+   - 在 `frontend/src/main.tsx` 中包裹 `ChakraProvider`：
      ```tsx
-     import { HeroUIProvider } from "@heroui/react";
+     import { ChakraProvider } from "@chakra-ui/react";
 
      function App() {
        return (
-         <HeroUIProvider>
+         <ChakraProvider>
            {/* 你的组件 */}
-         </HeroUIProvider>
+         </ChakraProvider>
        );
      }
      ```
@@ -106,7 +101,7 @@
 
 - 实时数据展示：
   - 显示电压、电流、功率、频率、电能等字段
-  - 使用 Hero UI 提供的卡片或表格组件展示数值
+  - 使用 Chakra UI 提供的卡片或表格组件展示数值
   - 不做复杂图表，仅展示字段名称与数值即可
 
 - 串口配置界面：
