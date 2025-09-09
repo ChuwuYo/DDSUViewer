@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Box, 
   Card, 
@@ -35,10 +35,15 @@ interface ToastProps {
 }
 
 const Toast = ({ message, type, onClose }: ToastProps) => {
+  const [isClosing, setIsClosing] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
+    const timer = setTimeout(() => {
+      setIsClosing(true);
+      setTimeout(onClose, 280); // Wait for animation to complete
+    }, 3000);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, []);
 
   const colors = {
     success: { bg: '#38a169', border: '#2f855a' },
@@ -61,7 +66,7 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
         zIndex: 9999,
         fontSize: '14px',
         maxWidth: '300px',
-        animation: 'slideIn 0.3s ease-out'
+        animation: isClosing ? 'slideOut 0.3s ease-in forwards' : 'slideIn 0.3s ease-out'
       }}
     >
       <style>
@@ -69,6 +74,10 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
           @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
           }
         `}
       </style>
@@ -180,9 +189,9 @@ export const SerialConfigPanel = () => {
   const { status } = useAppStore();
   const isConnected = status.connected;
 
-  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
     setToast({ message, type });
-  };
+  }, []);
 
   useEffect(() => {
     const loadPorts = async () => {
