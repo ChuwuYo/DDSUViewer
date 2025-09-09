@@ -1,6 +1,6 @@
 import React from 'react'
 import {createRoot} from 'react-dom/client'
-import { HeroUIProvider } from '@heroui/react'
+import { ChakraProvider } from '@chakra-ui/react'
 import './style.css'
 import App from './App'
 
@@ -10,8 +10,8 @@ const root = createRoot(container!)
 
 root.render(
     <React.StrictMode>
-        <HeroUIProvider>
+        <ChakraProvider>
             <App/>
-        </HeroUIProvider>
+        </ChakraProvider>
     </React.StrictMode>
 )
