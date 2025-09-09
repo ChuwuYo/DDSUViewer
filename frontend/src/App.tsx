@@ -1,23 +1,56 @@
-import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge } from '@chakra-ui/react';
+import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge, Image, Text } from '@chakra-ui/react';
 import { ElectricalDataPanel } from './components/ElectricalDataPanel';
 import { SerialConfigPanel } from './components/SerialConfigPanel';
 import { StatusPanel } from './components/StatusPanel';
-import { Toaster } from './components/ErrorToast';
+import { mdColors } from './theme/colors';
 
 import './App.css';
 
 function App() {
   return (
-    <Box minH="100vh" bg="gray.100">
+    <Box minH="100vh" bg={mdColors.background}>
       {/* 顶部标题栏 */}
-      <Box bg="white" shadow="md" borderBottom="1px" borderColor="gray.200">
+      <Box bg={mdColors.surface} shadow="md" borderBottom="1px" borderColor={mdColors.outlineVariant}>
         <Box maxW="7xl" mx="auto" px={6} py={4}>
           <Flex align="center">
-            <Heading size="lg" color="blue.600" fontWeight="bold">
-              DDSU666 电能表上位机
-            </Heading>
+            <Flex align="center" gap={3}>
+              <Image 
+                src="/appicon.png" 
+                alt="DDSU666 Logo" 
+                boxSize="32px"
+                objectFit="contain"
+              />
+              <Box>
+                <Flex align="baseline" gap={2}>
+                  <Text 
+                    fontSize="xl" 
+                    fontWeight="800" 
+                    color={mdColors.primary}
+                    letterSpacing="-0.5px"
+                  >
+                    DDSU666
+                  </Text>
+                  <Text 
+                    fontSize="lg" 
+                    fontWeight="500" 
+                    color={mdColors.onSurfaceVariant}
+                    letterSpacing="0.2px"
+                  >
+                    电能表上位机
+                  </Text>
+                </Flex>
+                <Text 
+                  fontSize="xs" 
+                  color={mdColors.outline} 
+                  fontWeight="400"
+                  mt={-1}
+                >
+                  Power Meter Host Computer
+                </Text>
+              </Box>
+            </Flex>
             <Spacer />
-            <Badge colorScheme="green" variant="subtle" px={3} py={1}>
+            <Badge bg={mdColors.secondaryContainer} color={mdColors.onSecondaryContainer} px={3} py={1}>
               在线监控
             </Badge>
           </Flex>
@@ -45,7 +78,6 @@ function App() {
           </GridItem>
         </Grid>
       </Box>
-      <Toaster />
     </Box>
   );
 }

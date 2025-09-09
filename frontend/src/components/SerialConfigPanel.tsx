@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Box, 
   Card, 
@@ -6,14 +6,11 @@ import {
   Input, 
   VStack,
   HStack,
-  Alert,
-  NativeSelectRoot,
-  NativeSelectField,
   Button,
 } from '@chakra-ui/react';
 import { GetAvailablePorts, StartPolling, StopPolling, UpdateSerialConfig } from '../../wailsjs/go/main/App';
-import { showErrorToast, showWarningToast, showSuccessToast } from './ErrorToast';
 import { useAppStore, updateStatus } from '../hooks/usePolling';
+import { mdColors } from '../theme/colors';
 
 interface SerialConfig {
   port: string;
@@ -24,12 +21,162 @@ interface SerialConfig {
   slaveID: number;
 }
 
+interface CustomSelectProps {
+  value: string;
+  options: { label: string; value: string }[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+interface ToastProps {
+  message: string;
+  type: 'success' | 'error' | 'warning';
+  onClose: () => void;
+}
+
+const Toast = ({ message, type, onClose }: ToastProps) => {
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsClosing(true);
+      setTimeout(onClose, 280); // Wait for animation to complete
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const colors = {
+    success: { bg: '#38a169', border: '#2f855a' },
+    error: { bg: mdColors.error, border: '#c53030' },
+    warning: { bg: '#dd6b20', border: '#c05621' }
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        backgroundColor: colors[type].bg,
+        color: 'white',
+        padding: '12px 16px',
+        borderRadius: '6px',
+        border: `1px solid ${colors[type].border}`,
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        zIndex: 9999,
+        fontSize: '14px',
+        maxWidth: '300px',
+        animation: isClosing ? 'slideOut 0.3s ease-in forwards' : 'slideIn 0.3s ease-out'
+      }}
+    >
+      <style>
+        {`
+          @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+          }
+        `}
+      </style>
+      {message}
+    </div>
+  );
+};
+
+const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div ref={selectRef} style={{ position: 'relative' }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          border: `1px solid ${mdColors.outlineVariant}`,
+          borderRadius: '6px',
+          fontSize: '14px',
+          backgroundColor: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <span style={{ color: selectedOption ? '#000' : '#a0aec0' }}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <span style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+          ▼
+        </span>
+      </div>
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            backgroundColor: 'white',
+            border: `1px solid ${mdColors.outlineVariant}`,
+            borderRadius: '6px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            zIndex: 1000,
+            maxHeight: '200px',
+            overflowY: 'auto'
+          }}
+        >
+          {options.map((option) => (
+            <div
+              key={option.value}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                backgroundColor: option.value === value ? '#f7fafc' : 'white',
+                borderBottom: '1px solid #f7fafc'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f7fafc';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = option.value === value ? '#f7fafc' : 'white';
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const SerialConfigPanel = () => {
-  const [hexSend, setHexSend] = useState(false);
-  const [hexDisplay, setHexDisplay] = useState(false);
   const [slaveID, setSlaveID] = useState('0C');
   const [originalSlaveID, setOriginalSlaveID] = useState('0C');
   const [ports, setPorts] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const [config, setConfig] = useState<SerialConfig>({
     port: '',
     baudRate: 9600,
@@ -41,6 +188,10 @@ export const SerialConfigPanel = () => {
   
   const { status } = useAppStore();
   const isConnected = status.connected;
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ message, type });
+  }, []);
 
   useEffect(() => {
     const loadPorts = async () => {
@@ -69,19 +220,19 @@ export const SerialConfigPanel = () => {
       );
       
       if (result) {
-        showSuccessToast('配置更新', `${field} 已更新为 ${value}`);
+        showToast(`${field} 已更新为 ${value}`, 'success');
       } else {
-        showErrorToast('配置失败', '更新配置失败');
+        showToast('更新配置失败', 'error');
       }
     } catch (error: any) {
-      showErrorToast('配置失败', error.message || '更新配置失败');
+      showToast(error.message || '更新配置失败', 'error');
     }
   };
 
   const handleSlaveIDChange = (value: string) => {
     setSlaveID(value.toUpperCase());
     if (!value.trim()) {
-      showWarningToast('从站地址为空', '请输入从站地址后再进行通信');
+      showToast('请输入从站地址后再进行通信', 'warning');
     }
   };
 
@@ -90,10 +241,10 @@ export const SerialConfigPanel = () => {
       console.log('停止串口...');
       updateStatus({ connected: false, errorMessage: '' });
       StopPolling().catch(console.error);
-      showSuccessToast('停止采集', '数据采集已停止');
+      showToast('数据采集已停止', 'success');
     } else {
       if (!config.port) {
-        showErrorToast('配置错误', '请先选择串口');
+        showToast('请先选择串口', 'error');
         return;
       }
       
@@ -102,162 +253,142 @@ export const SerialConfigPanel = () => {
       StartPolling().then(result => {
         console.log('StartPolling result:', result);
         if (result) {
-          showSuccessToast('开始采集', '数据采集已开始');
+          showToast('数据采集已开始', 'success');
         } else {
           updateStatus({ connected: false, errorMessage: '启动失败' });
-          showErrorToast('启动失败', '启动数据采集失败');
+          showToast('启动数据采集失败', 'error');
         }
       }).catch(error => {
         console.error('StartPolling error:', error);
         updateStatus({ connected: false, errorMessage: error.message });
-        showErrorToast('操作失败', error.message || '操作失败');
+        showToast(error.message || '操作失败', 'error');
       });
     }
   };
 
   return (
-    <Card.Root bg="white" shadow="md" borderRadius="xl" border="1px" borderColor="gray.200">
-      <Card.Header pb={2}>
-        <HStack justify="space-between" align="center">
-          <Text fontSize="lg" fontWeight="bold" color="gray.800">串口配置</Text>
-          <Button
-            size="sm"
-            colorScheme={isConnected ? 'red' : 'green'}
-            onClick={handleSerialToggle}
-          >
-            {isConnected ? '关闭串口' : '打开串口'}
-          </Button>
-          <Text fontSize="xs" color="gray.500">
-            状态: {isConnected ? '已连接' : '未连接'}
-          </Text>
-        </HStack>
-      </Card.Header>
-      <Card.Body pt={2}>
-        <VStack gap={4} align="stretch">
-          {/* COM 端口 */}
-          <Box>
-            <Text fontSize="sm" mb={2} fontWeight="medium" color="gray.700">COM 端口</Text>
-            <NativeSelectRoot>
-              <NativeSelectField 
-                value={config?.port || ''} 
-                onChange={(e) => handleConfigUpdate('port', e.target.value)}
-              >
-                <option value="">选择端口</option>
-                {ports.map(port => (
-                  <option key={port} value={port}>{port}</option>
-                ))}
-              </NativeSelectField>
-            </NativeSelectRoot>
-          </Box>
+    <>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+      <Card.Root bg="white" shadow="md" borderRadius="xl" border="1px" borderColor="gray.200">
+        <Card.Header pb={2}>
+          <HStack justify="space-between" align="center">
+            <Text fontSize="lg" fontWeight="bold" color="gray.800">串口配置</Text>
+            <Button
+              size="sm"
+              colorScheme={isConnected ? 'red' : 'green'}
+              onClick={handleSerialToggle}
+            >
+              {isConnected ? '关闭串口' : '打开串口'}
+            </Button>
+            <Text fontSize="xs" color="gray.500">
+              状态: {isConnected ? '已连接' : '未连接'}
+            </Text>
+          </HStack>
+        </Card.Header>
+        <Card.Body pt={2}>
+          <VStack gap={4} align="stretch">
+            {/* COM 端口 */}
+            <Box>
+              <Text fontSize="sm" mb={2} fontWeight="medium" color="gray.700">COM 端口</Text>
+              <CustomSelect
+                value={config.port}
+                options={ports.map(port => ({ label: port, value: port }))}
+                onChange={(value) => handleConfigUpdate('port', value)}
+                placeholder="选择端口"
+              />
+            </Box>
 
-          {/* 从站地址 */}
-          <Box>
-            <Text fontSize="sm" mb={2}>从站地址</Text>
-            <Input
-              placeholder="请输入从站地址 (如: 0C)"
-              value={slaveID}
-              onChange={(e) => handleSlaveIDChange(e.target.value)}
-              onBlur={() => {
-                if (slaveID.trim() && slaveID !== originalSlaveID) {
-                  const id = parseInt(slaveID, 16);
-                  if (!isNaN(id) && id > 0 && id < 256) {
-                    handleConfigUpdate('slaveID', id);
-                    setOriginalSlaveID(slaveID);
-                  } else {
-                    showErrorToast('无效地址', '从站地址必须为 01-FF 之间的十六进制数字');
-                    setSlaveID(originalSlaveID);
+            {/* 从站地址 */}
+            <Box>
+              <Text fontSize="sm" mb={2}>从站地址</Text>
+              <Input
+                placeholder="请输入从站地址 (如: 0C)"
+                value={slaveID}
+                onChange={(e) => handleSlaveIDChange(e.target.value)}
+                onBlur={() => {
+                  if (slaveID.trim() && slaveID !== originalSlaveID) {
+                    const id = parseInt(slaveID, 16);
+                    if (!isNaN(id) && id > 0 && id < 256) {
+                      handleConfigUpdate('slaveID', id);
+                      setOriginalSlaveID(slaveID);
+                    } else {
+                      showToast('从站地址必须为 01-FF 之间的十六进制数字', 'error');
+                      setSlaveID(originalSlaveID);
+                    }
                   }
-                }
-              }}
-            />
-            {!slaveID.trim() && (
-              <Alert.Root status="warning" size="sm" mt={2}>
-                <Alert.Description>请输入从站地址</Alert.Description>
-              </Alert.Root>
-            )}
-          </Box>
-
-          {/* 波特率 */}
-          <Box>
-            <Text fontSize="sm" mb={2}>波特率</Text>
-            <NativeSelectRoot>
-              <NativeSelectField 
-                value={config?.baudRate?.toString() || '9600'}
-                onChange={(e) => handleConfigUpdate('baudRate', parseInt(e.target.value))}
-              >
-                <option value="4800">4800</option>
-                <option value="9600">9600</option>
-                <option value="19200">19200</option>
-                <option value="38400">38400</option>
-                <option value="115200">115200</option>
-              </NativeSelectField>
-            </NativeSelectRoot>
-          </Box>
-
-          {/* 数据位 */}
-          <Box>
-            <Text fontSize="sm" mb={2}>数据位</Text>
-            <NativeSelectRoot>
-              <NativeSelectField 
-                value={config?.dataBits?.toString() || '8'}
-                onChange={(e) => handleConfigUpdate('dataBits', parseInt(e.target.value))}
-              >
-                <option value="7">7</option>
-                <option value="8">8</option>
-              </NativeSelectField>
-            </NativeSelectRoot>
-          </Box>
-
-          {/* 停止位 */}
-          <Box>
-            <Text fontSize="sm" mb={2}>停止位</Text>
-            <NativeSelectRoot>
-              <NativeSelectField 
-                value={config?.stopBits?.toString() || '1'}
-                onChange={(e) => handleConfigUpdate('stopBits', parseInt(e.target.value))}
-              >
-                <option value="1">1</option>
-                <option value="2">2</option>
-              </NativeSelectField>
-            </NativeSelectRoot>
-          </Box>
-
-          {/* 校验位 */}
-          <Box>
-            <Text fontSize="sm" mb={2}>校验位</Text>
-            <NativeSelectRoot>
-              <NativeSelectField 
-                value={config?.parity || 'None'}
-                onChange={(e) => handleConfigUpdate('parity', e.target.value)}
-              >
-                <option value="None">None</option>
-                <option value="Even">Even</option>
-                <option value="Odd">Odd</option>
-              </NativeSelectField>
-            </NativeSelectRoot>
-          </Box>
-
-          {/* Hex 控制 */}
-          <VStack gap={2} align="stretch">
-            <HStack justify="space-between">
-              <Text fontSize="sm">Hex 发送</Text>
-              <input 
-                type="checkbox" 
-                checked={hexSend} 
-                onChange={(e) => setHexSend(e.target.checked)} 
+                }}
               />
-            </HStack>
-            <HStack justify="space-between">
-              <Text fontSize="sm">Hex 显示</Text>
-              <input 
-                type="checkbox" 
-                checked={hexDisplay} 
-                onChange={(e) => setHexDisplay(e.target.checked)} 
+              {!slaveID.trim() && (
+                <Text fontSize="xs" color="orange.500" mt={1}>请输入从站地址</Text>
+              )}
+            </Box>
+
+            {/* 波特率 */}
+            <Box>
+              <Text fontSize="sm" mb={2}>波特率</Text>
+              <CustomSelect
+                value={config.baudRate.toString()}
+                options={[
+                  { label: '4800', value: '4800' },
+                  { label: '9600', value: '9600' },
+                  { label: '19200', value: '19200' },
+                  { label: '38400', value: '38400' },
+                  { label: '115200', value: '115200' }
+                ]}
+                onChange={(value) => handleConfigUpdate('baudRate', parseInt(value))}
               />
-            </HStack>
+            </Box>
+
+            {/* 数据位 */}
+            <Box>
+              <Text fontSize="sm" mb={2}>数据位</Text>
+              <CustomSelect
+                value={config.dataBits.toString()}
+                options={[
+                  { label: '7', value: '7' },
+                  { label: '8', value: '8' }
+                ]}
+                onChange={(value) => handleConfigUpdate('dataBits', parseInt(value))}
+              />
+            </Box>
+
+            {/* 停止位 */}
+            <Box>
+              <Text fontSize="sm" mb={2}>停止位</Text>
+              <CustomSelect
+                value={config.stopBits.toString()}
+                options={[
+                  { label: '1', value: '1' },
+                  { label: '2', value: '2' }
+                ]}
+                onChange={(value) => handleConfigUpdate('stopBits', parseInt(value))}
+              />
+            </Box>
+
+            {/* 校验位 */}
+            <Box>
+              <Text fontSize="sm" mb={2}>校验位</Text>
+              <CustomSelect
+                value={config.parity}
+                options={[
+                  { label: 'None', value: 'None' },
+                  { label: 'Even', value: 'Even' },
+                  { label: 'Odd', value: 'Odd' }
+                ]}
+                onChange={(value) => handleConfigUpdate('parity', value)}
+              />
+            </Box>
+
           </VStack>
-        </VStack>
-      </Card.Body>
-    </Card.Root>
+        </Card.Body>
+
+      </Card.Root>
+    </>
   );
 };

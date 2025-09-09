@@ -1,13 +1,14 @@
 import { Box, Card, Text, Badge, VStack, HStack } from '@chakra-ui/react';
 import { useAppStore } from '../hooks/usePolling';
+import { mdColors } from '../theme/colors';
 
 export const StatusPanel = () => {
   const { status } = useAppStore();
 
   return (
-    <Card.Root bg="white" shadow="md" borderRadius="xl" border="1px" borderColor="gray.200">
+    <Card.Root bg={mdColors.surface} shadow="md" borderRadius="xl" border="1px" borderColor={mdColors.outlineVariant}>
       <Card.Header pb={2}>
-        <Text fontSize="lg" fontWeight="bold" color="gray.800">设备状态</Text>
+        <Text fontSize="lg" fontWeight="bold" color={mdColors.onSurface}>设备状态</Text>
       </Card.Header>
       <Card.Body pt={2}>
         <VStack gap={4} align="stretch">
@@ -15,8 +16,8 @@ export const StatusPanel = () => {
           <HStack justify="space-between">
             <Text fontSize="sm">连接状态</Text>
             <Badge 
-              colorScheme={status.connected ? 'green' : 'red'}
-              variant="solid"
+              bg={status.connected ? mdColors.secondaryContainer : mdColors.errorContainer}
+              color={status.connected ? mdColors.onSecondaryContainer : mdColors.error}
               px={2}
               textAlign="center"
             >
@@ -28,8 +29,8 @@ export const StatusPanel = () => {
           <HStack justify="space-between">
             <Text fontSize="sm">协议类型</Text>
             <Badge 
-              colorScheme={status.protocol === 'Modbus RTU' ? 'blue' : 'gray'}
-              variant="outline"
+              bg={mdColors.primaryContainer}
+              color={mdColors.onPrimaryContainer}
               minW="80px"
               textAlign="center"
             >
@@ -39,8 +40,8 @@ export const StatusPanel = () => {
 
           {/* 最后更新时间 */}
           <Box>
-            <Text fontSize="sm" color="gray.600">最后更新</Text>
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="sm" color={mdColors.onSurfaceVariant}>最后更新</Text>
+            <Text fontSize="xs" color={mdColors.outline}>
               {new Date(status.lastUpdate).toLocaleString()}
             </Text>
           </Box>
@@ -48,8 +49,8 @@ export const StatusPanel = () => {
           {/* 错误信息 */}
           {status.errorMessage && (
             <Box>
-              <Text fontSize="sm" color="red.600" mb={1}>错误信息</Text>
-              <Text fontSize="xs" color="red.500" bg="red.50" p={2} borderRadius="md">
+              <Text fontSize="sm" color={mdColors.error} mb={1}>错误信息</Text>
+              <Text fontSize="xs" color={mdColors.error} bg={mdColors.errorContainer} p={2} borderRadius="md">
                 {status.errorMessage}
               </Text>
             </Box>
