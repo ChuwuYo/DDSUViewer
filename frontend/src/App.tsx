@@ -2,7 +2,6 @@ import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge } from '@chakra-ui/re
 import { ElectricalDataPanel } from './components/ElectricalDataPanel';
 import { SerialConfigPanel } from './components/SerialConfigPanel';
 import { StatusPanel } from './components/StatusPanel';
-import { Toaster } from './components/ui/toaster';
 import { mdColors } from './theme/colors';
 
 import './App.css';
@@ -46,7 +45,6 @@ function App() {
           </GridItem>
         </Grid>
       </Box>
-      <Toaster />
     </Box>
   );
 }
