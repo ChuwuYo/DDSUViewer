@@ -2,17 +2,17 @@
 
 ## 🏗️ 项目基础设置
 
-- [ ] 升级前端依赖到最新版本
-  - [ ] React 18.3.1 + React DOM
-  - [ ] TypeScript 5.5.4
-  - [ ] Vite 构建工具配置
-- [ ] 集成 Hero UI 组件库
-  - [ ] 安装 @heroui/react
-  - [ ] 配置 HeroUIProvider
-  - [ ] 添加基础组件 (Card, Input, Table)
-- [ ] 集成 GraphQL 客户端
-  - [ ] 安装 Apollo Client 或 urql
-  - [ ] 配置 GraphQL 客户端连接
+- [x] 升级前端依赖到最新版本
+  - [x] React 18.3.1 + React DOM
+  - [x] TypeScript 5.5.4
+  - [x] Vite 构建工具配置
+- [x] 集成 Hero UI 组件库
+  - [x] 安装 @heroui/react
+  - [x] 配置 HeroUIProvider
+  - [ ] 添加基础组件 (Card, Input, Table) - 在实际开发界面时添加
+- [x] 集成 GraphQL 客户端
+  - [x] 安装 Apollo Client 或 urql
+  - [ ] 配置 GraphQL 客户端连接 - 需要后端GraphQL服务准备好后配置
 
 ## 🔌 后端核心模块开发
 
