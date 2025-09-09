@@ -62,34 +62,34 @@
 ## 🌐 GraphQL 接口开发
 
 ### Schema 定义
-- [ ] 定义 GraphQL Schema
-  - [ ] Query 类型 (读取数据)
-  - [ ] Mutation 类型 (配置修改)
-  - [ ] Subscription 类型 (实时推送)
-- [ ] 数据类型定义
-  - [ ] 电参量数据类型
-  - [ ] 串口配置类型
-  - [ ] 设备状态类型
+- [x] 定义 GraphQL Schema
+  - [x] Query 类型 (读取数据)
+  - [x] Mutation 类型 (配置修改)
+  - [x] Subscription 类型 (实时推送)
+- [x] 数据类型定义
+  - [x] 电参量数据类型
+  - [x] 串口配置类型
+  - [x] 设备状态类型
 
 ### Resolver 实现
-- [ ] Query Resolver
-  - [ ] 获取实时电参量数据
-  - [ ] 获取设备连接状态
-  - [ ] 获取串口配置
-- [ ] Mutation Resolver
-  - [ ] 修改串口参数
-  - [ ] 启动/停止数据采集
-- [ ] Subscription Resolver
-  - [ ] 实时数据推送
-  - [ ] 状态变化通知
+- [x] Query Resolver
+  - [x] 获取实时电参量数据
+  - [x] 获取设备连接状态
+  - [x] 获取串口配置
+- [x] Mutation Resolver
+  - [x] 修改串口参数
+  - [x] 启动/停止数据采集
+- [x] Subscription Resolver
+  - [x] 实时数据推送
+  - [x] 状态变化通知
 
 ### 实时推送系统 (pubsub)
-- [ ] WebSocket 连接管理
-- [ ] 订阅者管理
-- [ ] 数据广播机制
-- [ ] 连接异常处理
+- [x] WebSocket 连接管理
+- [x] 订阅者管理
+- [x] 数据广播机制
+- [x] 连接异常处理
 
-## 🎨 前端界面开发
+## 🎨 前端界面开发（能用HeroUI已有组件就用）
 
 ### 主界面布局
 - [ ] 应用主框架搭建

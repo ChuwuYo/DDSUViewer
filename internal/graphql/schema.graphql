@@ -1,0 +1,67 @@
+type Query {
+  # 获取实时电参量数据
+  electricalData: ElectricalData
+  # 获取设备连接状态
+  deviceStatus: DeviceStatus
+  # 获取串口配置
+  serialConfig: SerialConfig
+  # 获取可用串口列表
+  availablePorts: [String!]!
+}
+
+type Mutation {
+  # 修改串口参数
+  updateSerialConfig(input: SerialConfigInput!): Boolean!
+  # 启动数据采集
+  startPolling: Boolean!
+  # 停止数据采集
+  stopPolling: Boolean!
+}
+
+type Subscription {
+  # 实时数据推送
+  electricalDataStream: ElectricalData!
+  # 状态变化通知
+  deviceStatusStream: DeviceStatus!
+}
+
+# 电参量数据类型
+type ElectricalData {
+  voltage: Float!       # 电压 V
+  current: Float!       # 电流 A
+  activePower: Float!   # 有功功率 W
+  reactivePower: Float! # 无功功率 VAR
+  apparentPower: Float! # 视在功率 VA
+  powerFactor: Float!   # 功率因数
+  frequency: Float!     # 频率 Hz
+  activeEnergy: Float!  # 有功总电能 kWh
+  timestamp: String!    # 时间戳
+}
+
+# 设备状态类型
+type DeviceStatus {
+  connected: Boolean!   # 是否连接
+  protocol: String!     # 协议类型
+  lastUpdate: String!   # 最后更新时间
+  errorMessage: String  # 错误信息
+}
+
+# 串口配置类型
+type SerialConfig {
+  port: String!         # COM端口
+  baudRate: Int!        # 波特率
+  dataBits: Int!        # 数据位
+  stopBits: Int!        # 停止位
+  parity: String!       # 校验位
+  slaveID: Int!         # 从站地址
+}
+
+# 串口配置输入类型
+input SerialConfigInput {
+  port: String!         # COM端口
+  baudRate: Int!        # 波特率
+  dataBits: Int!        # 数据位
+  stopBits: Int!        # 停止位
+  parity: String!       # 校验位
+  slaveID: Int!         # 从站地址
+}

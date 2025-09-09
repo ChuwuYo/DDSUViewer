@@ -1,0 +1,21 @@
+schema:
+  - internal/graphql/schema.graphql
+
+exec:
+  filename: internal/graphql/generated.go
+  package: graphql
+
+resolver:
+  filename: internal/graphql/resolver.go
+  package: graphql
+  type: Resolver
+
+models:
+  ElectricalData:
+    model: DDSUViewer/internal/graphql.ElectricalData
+  DeviceStatus:
+    model: DDSUViewer/internal/graphql.DeviceStatus
+  SerialConfig:
+    model: DDSUViewer/internal/graphql.SerialConfig
+  SerialConfigInput:
+    model: DDSUViewer/internal/graphql.SerialConfigInput
