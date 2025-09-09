@@ -56,16 +56,15 @@ class AppStore {
   }
 
   private startDataGeneration() {
-    this.dataInterval = window.setInterval(() => {
+    this.dataInterval = window.setInterval(async () => {
       if (this.status.connected) {
-        // 尝试获取真实数据（同步方式）
+        // 尝试获取真实数据
         let realData = null;
         try {
           // @ts-ignore
           const { GetElectricalData } = window.go?.main?.App || {};
           if (GetElectricalData) {
-            // 使用同步调用避免卡住
-            realData = GetElectricalData();
+            realData = await GetElectricalData();
           }
         } catch (error) {
           realData = null;

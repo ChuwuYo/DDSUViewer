@@ -10,6 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { GetAvailablePorts, StartPolling, StopPolling, UpdateSerialConfig } from '../../wailsjs/go/main/App';
 import { useAppStore, updateStatus } from '../hooks/usePolling';
+import { mdColors } from '../theme/colors';
 
 interface SerialConfig {
   port: string;
@@ -40,9 +41,9 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
   }, [onClose]);
 
   const colors = {
-    success: { bg: '#48bb78', border: '#38a169' },
-    error: { bg: '#f56565', border: '#e53e3e' },
-    warning: { bg: '#ed8936', border: '#dd6b20' }
+    success: { bg: '#38a169', border: '#2f855a' },
+    error: { bg: mdColors.error, border: '#c53030' },
+    warning: { bg: '#dd6b20', border: '#c05621' }
   };
 
   return (
@@ -99,7 +100,7 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
         style={{
           width: '100%',
           padding: '8px 12px',
-          border: '1px solid #e2e8f0',
+          border: `1px solid ${mdColors.outlineVariant}`,
           borderRadius: '6px',
           fontSize: '14px',
           backgroundColor: 'white',
@@ -124,7 +125,7 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
             left: 0,
             right: 0,
             backgroundColor: 'white',
-            border: '1px solid #e2e8f0',
+            border: `1px solid ${mdColors.outlineVariant}`,
             borderRadius: '6px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             zIndex: 1000,
