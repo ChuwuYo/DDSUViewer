@@ -6,6 +6,7 @@ import (
 
 	"DDSUViewer/internal/graphql"
 	"DDSUViewer/internal/service"
+	goserial "go.bug.st/serial"
 )
 
 // App struct
@@ -49,6 +50,26 @@ func (a *App) GetAvailablePorts() []string {
 	return ports
 }
 
+// GetElectricalData 获取电参量数据 (Wails方法)
+func (a *App) GetElectricalData() map[string]interface{} {
+	data := a.service.GetElectricalData()
+	if data == nil {
+		return nil
+	}
+	
+	return map[string]interface{}{
+		"voltage":       data.Voltage,
+		"current":       data.Current,
+		"activePower":   data.ActivePower,
+		"reactivePower": data.ReactivePower,
+		"apparentPower": data.ApparentPower,
+		"powerFactor":   data.PowerFactor,
+		"frequency":     data.Frequency,
+		"activeEnergy":  data.ActiveEnergy,
+		"timestamp":     data.Timestamp.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
 // StartPolling 启动数据采集 (Wails方法)
 func (a *App) StartPolling() bool {
 	err := a.service.StartPolling()
@@ -64,6 +85,44 @@ func (a *App) StopPolling() bool {
 	err := a.service.StopPolling()
 	if err != nil {
 		log.Printf("停止数据采集失败: %v", err)
+		return false
+	}
+	return true
+}
+
+// UpdateSerialConfig 更新串口配置 (Wails方法)
+func (a *App) UpdateSerialConfig(port string, baudRate int, dataBits int, stopBits int, parity string, slaveID int) bool {
+	// 转换停止位
+	var sb goserial.StopBits
+	if stopBits == 2 {
+		sb = goserial.TwoStopBits
+	} else {
+		sb = goserial.OneStopBit
+	}
+	
+	// 转换校验位
+	var p goserial.Parity
+	switch parity {
+	case "Even":
+		p = goserial.EvenParity
+	case "Odd":
+		p = goserial.OddParity
+	default:
+		p = goserial.NoParity
+	}
+	
+	config := &service.SerialConfig{
+		Port:     port,
+		BaudRate: baudRate,
+		DataBits: dataBits,
+		StopBits: sb,
+		Parity:   p,
+		SlaveID:  slaveID,
+	}
+	
+	err := a.service.UpdateSerialConfig(config)
+	if err != nil {
+		log.Printf("更新串口配置失败: %v", err)
 		return false
 	}
 	return true

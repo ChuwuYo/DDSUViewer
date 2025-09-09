@@ -23,15 +23,7 @@ func NewResolver(svc *service.Service) *Resolver {
 
 // UpdateSerialConfig is the resolver for the updateSerialConfig field.
 func (r *mutationResolver) UpdateSerialConfig(ctx context.Context, input SerialConfigInput) (bool, error) {
-	config := &service.SerialConfig{
-		Port:     input.Port,
-		BaudRate: input.BaudRate,
-		DataBits: input.DataBits,
-		StopBits: input.StopBits,
-		Parity:   input.Parity,
-		SlaveID:  input.SlaveID,
-	}
-
+	config := ConvertSerialConfigInput(input)
 	err := r.service.UpdateSerialConfig(config)
 	return err == nil, err
 }
@@ -83,15 +75,7 @@ func (r *queryResolver) SerialConfig(ctx context.Context) (*SerialConfig, error)
 	if config == nil {
 		return nil, fmt.Errorf("串口配置不可用")
 	}
-
-	return &SerialConfig{
-		Port:     config.Port,
-		BaudRate: config.BaudRate,
-		DataBits: config.DataBits,
-		StopBits: config.StopBits,
-		Parity:   config.Parity,
-		SlaveID:  config.SlaveID,
-	}, nil
+	return ConvertSerialConfig(config), nil
 }
 
 // AvailablePorts is the resolver for the availablePorts field.

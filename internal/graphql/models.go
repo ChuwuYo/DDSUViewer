@@ -1,10 +1,5 @@
 package graphql
 
-import (
-	"time"
-	"DDSUViewer/internal/service"
-)
-
 // ElectricalData 电参量数据
 type ElectricalData struct {
 	Voltage       float64 `json:"voltage"`
@@ -46,21 +41,3 @@ type SerialConfigInput struct {
 	SlaveID  int    `json:"slaveID"`
 }
 
-// ConvertElectricalData 转换电参量数据
-func ConvertElectricalData(data *service.ElectricalData) *ElectricalData {
-	if data == nil {
-		return nil
-	}
-	
-	return &ElectricalData{
-		Voltage:       data.Voltage,
-		Current:       data.Current,
-		ActivePower:   data.ActivePower,
-		ReactivePower: data.ReactivePower,
-		ApparentPower: data.ApparentPower,
-		PowerFactor:   data.PowerFactor,
-		Frequency:     data.Frequency,
-		ActiveEnergy:  data.ActiveEnergy,
-		Timestamp:     data.Timestamp.Format(time.RFC3339),
-	}
-}

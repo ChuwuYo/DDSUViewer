@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react';
 import { 
   Box, 
   Card, 
@@ -11,11 +10,10 @@ import {
   NativeSelectRoot,
   NativeSelectField,
   Button,
-
 } from '@chakra-ui/react';
-import { GET_SERIAL_CONFIG, GET_AVAILABLE_PORTS, GET_DEVICE_STATUS } from '../graphql/queries';
-import { UPDATE_SERIAL_CONFIG, OPEN_SERIAL, CLOSE_SERIAL } from '../graphql/mutations';
+import { GetAvailablePorts, StartPolling, StopPolling, UpdateSerialConfig } from '../../wailsjs/go/main/App';
 import { showErrorToast, showWarningToast, showSuccessToast } from './ErrorToast';
+import { useAppStore, updateStatus } from '../hooks/usePolling';
 
 interface SerialConfig {
   port: string;
@@ -29,54 +27,91 @@ interface SerialConfig {
 export const SerialConfigPanel = () => {
   const [hexSend, setHexSend] = useState(false);
   const [hexDisplay, setHexDisplay] = useState(false);
-  const [slaveID, setSlaveID] = useState('');
-
-  const { data: configData } = useQuery<{ serialConfig: SerialConfig }>(GET_SERIAL_CONFIG);
-  const { data: portsData } = useQuery<{ availablePorts: string[] }>(GET_AVAILABLE_PORTS);
-  const { data: statusData } = useQuery<{ deviceStatus: { connected: boolean } }>(GET_DEVICE_STATUS, { pollInterval: 2000 });
-  const [updateConfig] = useMutation(UPDATE_SERIAL_CONFIG);
-  const [openSerial] = useMutation(OPEN_SERIAL);
-  const [closeSerial] = useMutation(CLOSE_SERIAL);
-
-  const config = configData?.serialConfig;
-  const ports = portsData?.availablePorts || [];
-  const isConnected = statusData?.deviceStatus?.connected || false;
+  const [slaveID, setSlaveID] = useState('0C');
+  const [originalSlaveID, setOriginalSlaveID] = useState('0C');
+  const [ports, setPorts] = useState<string[]>([]);
+  const [config, setConfig] = useState<SerialConfig>({
+    port: '',
+    baudRate: 9600,
+    dataBits: 8,
+    stopBits: 1,
+    parity: 'None',
+    slaveID: 12,
+  });
+  
+  const { status } = useAppStore();
+  const isConnected = status.connected;
 
   useEffect(() => {
-    if (config?.slaveID) {
-      setSlaveID(config.slaveID.toString());
-    }
-  }, [config]);
+    const loadPorts = async () => {
+      try {
+        const availablePorts = await GetAvailablePorts();
+        setPorts(availablePorts);
+      } catch (error) {
+        console.error('Failed to get ports:', error);
+      }
+    };
+    loadPorts();
+  }, []);
 
   const handleConfigUpdate = async (field: string, value: any) => {
+    const newConfig = { ...config, [field]: value };
+    setConfig(newConfig);
+    
     try {
-      await updateConfig({
-        variables: { input: { [field]: value } }
-      });
-      showSuccessToast('配置更新', `${field} 已更新为 ${value}`);
+      const result = await UpdateSerialConfig(
+        newConfig.port,
+        newConfig.baudRate,
+        newConfig.dataBits,
+        newConfig.stopBits,
+        newConfig.parity,
+        newConfig.slaveID
+      );
+      
+      if (result) {
+        showSuccessToast('配置更新', `${field} 已更新为 ${value}`);
+      } else {
+        showErrorToast('配置失败', '更新配置失败');
+      }
     } catch (error: any) {
-      showErrorToast('配置失败', `无法更新 ${field}: ${error.message}`);
+      showErrorToast('配置失败', error.message || '更新配置失败');
     }
   };
 
   const handleSlaveIDChange = (value: string) => {
-    setSlaveID(value);
+    setSlaveID(value.toUpperCase());
     if (!value.trim()) {
       showWarningToast('从站地址为空', '请输入从站地址后再进行通信');
     }
   };
 
-  const handleSerialToggle = async () => {
-    try {
-      if (isConnected) {
-        await closeSerial();
-        showSuccessToast('串口关闭', '串口已成功关闭');
-      } else {
-        await openSerial();
-        showSuccessToast('串口打开', '串口已成功打开');
+  const handleSerialToggle = () => {
+    if (isConnected) {
+      console.log('停止串口...');
+      updateStatus({ connected: false, errorMessage: '' });
+      StopPolling().catch(console.error);
+      showSuccessToast('停止采集', '数据采集已停止');
+    } else {
+      if (!config.port) {
+        showErrorToast('配置错误', '请先选择串口');
+        return;
       }
-    } catch (error: any) {
-      showErrorToast('串口操作失败', error.message);
+      
+      console.log('启动串口...', config);
+      updateStatus({ connected: true, errorMessage: '' });
+      StartPolling().then(result => {
+        console.log('StartPolling result:', result);
+        if (result) {
+          showSuccessToast('开始采集', '数据采集已开始');
+        } else {
+          updateStatus({ connected: false, errorMessage: '启动失败' });
+          showErrorToast('启动失败', '启动数据采集失败');
+        }
+      }).catch(error => {
+        console.error('StartPolling error:', error);
+        updateStatus({ connected: false, errorMessage: error.message });
+        showErrorToast('操作失败', error.message || '操作失败');
+      });
     }
   };
 
@@ -85,16 +120,16 @@ export const SerialConfigPanel = () => {
       <Card.Header pb={2}>
         <HStack justify="space-between" align="center">
           <Text fontSize="lg" fontWeight="bold" color="gray.800">串口配置</Text>
-          <HStack>
-            <Text fontSize="sm" color={isConnected ? 'green.600' : 'gray.500'}>
-              {isConnected ? '已连接' : '未连接'}
-            </Text>
-            <input 
-              type="checkbox" 
-              checked={isConnected}
-              onChange={handleSerialToggle}
-            />
-          </HStack>
+          <Button
+            size="sm"
+            colorScheme={isConnected ? 'red' : 'green'}
+            onClick={handleSerialToggle}
+          >
+            {isConnected ? '关闭串口' : '打开串口'}
+          </Button>
+          <Text fontSize="xs" color="gray.500">
+            状态: {isConnected ? '已连接' : '未连接'}
+          </Text>
         </HStack>
       </Card.Header>
       <Card.Body pt={2}>
@@ -119,16 +154,18 @@ export const SerialConfigPanel = () => {
           <Box>
             <Text fontSize="sm" mb={2}>从站地址</Text>
             <Input
-              placeholder="请输入从站地址 (如: 12)"
+              placeholder="请输入从站地址 (如: 0C)"
               value={slaveID}
               onChange={(e) => handleSlaveIDChange(e.target.value)}
               onBlur={() => {
-                if (slaveID.trim()) {
-                  const id = parseInt(slaveID);
+                if (slaveID.trim() && slaveID !== originalSlaveID) {
+                  const id = parseInt(slaveID, 16);
                   if (!isNaN(id) && id > 0 && id < 256) {
                     handleConfigUpdate('slaveID', id);
+                    setOriginalSlaveID(slaveID);
                   } else {
-                    showErrorToast('无效地址', '从站地址必须为 1-255 之间的数字');
+                    showErrorToast('无效地址', '从站地址必须为 01-FF 之间的十六进制数字');
+                    setSlaveID(originalSlaveID);
                   }
                 }
               }}

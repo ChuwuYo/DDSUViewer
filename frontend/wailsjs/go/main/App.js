@@ -6,10 +6,18 @@ export function GetAvailablePorts() {
   return window['go']['main']['App']['GetAvailablePorts']();
 }
 
+export function GetElectricalData() {
+  return window['go']['main']['App']['GetElectricalData']();
+}
+
 export function StartPolling() {
   return window['go']['main']['App']['StartPolling']();
 }
 
 export function StopPolling() {
   return window['go']['main']['App']['StopPolling']();
+}
+
+export function UpdateSerialConfig(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['main']['App']['UpdateSerialConfig'](arg1, arg2, arg3, arg4, arg5, arg6);
 }

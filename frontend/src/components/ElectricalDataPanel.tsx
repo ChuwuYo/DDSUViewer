@@ -1,19 +1,5 @@
-import { useQuery } from '@apollo/client/react';
-import { Box, Card, SimpleGrid, Text, Badge, Spinner, Flex } from '@chakra-ui/react';
-import { GET_ELECTRICAL_DATA } from '../graphql/queries';
-import { showErrorToast } from './ErrorToast';
-
-interface ElectricalData {
-  voltage: number;
-  current: number;
-  activePower: number;
-  reactivePower: number;
-  apparentPower: number;
-  powerFactor: number;
-  frequency: number;
-  activeEnergy: number;
-  timestamp: string;
-}
+import { Box, Card, SimpleGrid, Text, Badge, Flex } from '@chakra-ui/react';
+import { useAppStore } from '../hooks/usePolling';
 
 const DataCard = ({ title, value, unit, color = 'blue' }: {
   title: string;
@@ -41,19 +27,7 @@ const DataCard = ({ title, value, unit, color = 'blue' }: {
 );
 
 export const ElectricalDataPanel = () => {
-  const { data, loading, error } = useQuery<{ electricalData: ElectricalData }>(
-    GET_ELECTRICAL_DATA,
-    { 
-      pollInterval: 1000,
-      notifyOnNetworkStatusChange: false,
-      errorPolicy: 'ignore'
-    }
-  );
-
-  if (loading && !data) return <Spinner size="lg" />;
-  if (error && !data) return <Text color="red.500">数据加载失败: {error.message}</Text>;
-
-  const electricalData = data?.electricalData;
+  const { data: electricalData } = useAppStore();
 
   return (
     <Box bg="white" borderRadius="xl" shadow="md" p={6}>

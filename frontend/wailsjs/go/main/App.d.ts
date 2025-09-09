@@ -3,6 +3,10 @@
 
 export function GetAvailablePorts():Promise<Array<string>>;
 
+export function GetElectricalData():Promise<Record<string, any>>;
+
 export function StartPolling():Promise<boolean>;
 
 export function StopPolling():Promise<boolean>;
+
+export function UpdateSerialConfig(arg1:string,arg2:number,arg3:number,arg4:number,arg5:string,arg6:number):Promise<boolean>;

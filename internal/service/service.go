@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,8 +28,8 @@ type SerialConfig struct {
 	Port     string
 	BaudRate int
 	DataBits int
-	StopBits int
-	Parity   string
+	StopBits goserial.StopBits
+	Parity   goserial.Parity
 	SlaveID  int
 }
 
@@ -59,8 +61,8 @@ func NewService() *Service {
 			Port:     "COM1",
 			BaudRate: 9600,
 			DataBits: 8,
-			StopBits: 1,
-			Parity:   "None",
+			StopBits: goserial.OneStopBit,
+			Parity:   goserial.NoParity,
 			SlaveID:  12,
 		},
 		status: &DeviceStatus{
@@ -120,20 +122,35 @@ func (s *Service) StartPolling() error {
 		return nil // 已在运行
 	}
 
+	// 检查串口配置
+	if s.config.Port == "" {
+		err := fmt.Errorf("请选择串口")
+		s.status.Connected = false
+		s.status.ErrorMessage = err.Error()
+		return err
+	}
+
 	// 创建串口连接
 	serialConfig := serial.Config{
 		Port:     s.config.Port,
 		BaudRate: s.config.BaudRate,
 		DataBits: s.config.DataBits,
-		StopBits: goserial.StopBits(s.config.StopBits),
-		Parity:   s.parseParity(s.config.Parity),
+		StopBits: s.config.StopBits,
+		Parity:   s.config.Parity,
 	}
 
 	s.conn = serial.NewConnection(serialConfig)
 	if err := s.conn.Open(); err != nil {
 		s.status.Connected = false
-		s.status.ErrorMessage = err.Error()
-		return err
+		// 提供更详细的错误信息
+		if strings.Contains(err.Error(), "not found") {
+			s.status.ErrorMessage = fmt.Sprintf("串口 %s 不存在，请检查设备连接", s.config.Port)
+		} else if strings.Contains(err.Error(), "Access is denied") || strings.Contains(err.Error(), "busy") {
+			s.status.ErrorMessage = fmt.Sprintf("串口 %s 被占用，请关闭其他程序后重试", s.config.Port)
+		} else {
+			s.status.ErrorMessage = fmt.Sprintf("打开串口失败: %v", err)
+		}
+		return fmt.Errorf(s.status.ErrorMessage)
 	}
 
 	// 创建轮询器
@@ -145,6 +162,15 @@ func (s *Service) StartPolling() error {
 
 	s.status.Connected = true
 	s.status.ErrorMessage = ""
+	
+	// 通知状态订阅者
+	for _, ch := range s.statusSubs {
+		select {
+		case ch <- s.status:
+		default:
+			// 通道满时跳过
+		}
+	}
 
 	// 启动数据监听
 	go s.listenData()
@@ -159,12 +185,25 @@ func (s *Service) StopPolling() error {
 
 	if s.poller != nil {
 		s.poller.Stop()
+		s.poller = nil
 	}
 	if s.conn != nil {
 		s.conn.Close()
+		s.conn = nil
 	}
 
 	s.status.Connected = false
+	s.status.ErrorMessage = ""
+	
+	// 通知状态订阅者
+	for _, ch := range s.statusSubs {
+		select {
+		case ch <- s.status:
+		default:
+			// 通道满时跳过
+		}
+	}
+	
 	return nil
 }
 
@@ -243,14 +282,3 @@ func (s *Service) listenData() {
 	}
 }
 
-// parseParity 解析校验位
-func (s *Service) parseParity(parity string) goserial.Parity {
-	switch parity {
-	case "Even":
-		return goserial.EvenParity
-	case "Odd":
-		return goserial.OddParity
-	default:
-		return goserial.NoParity
-	}
-}

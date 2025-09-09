@@ -52,17 +52,21 @@ func GetDataPoints() []DataPoint {
 }
 
 // ParseFloat32 解析IEEE754浮点数
+// DDSU666设备使用特定的字节序：“字交换小端序”(Word-Swapped Little-Endian)
+// 原始数据: [Reg1_Hi, Reg1_Lo, Reg2_Hi, Reg2_Lo]
+// 需要重排为: [Reg1_Lo, Reg1_Hi, Reg2_Lo, Reg2_Hi] 然后按Little-Endian解析
 func ParseFloat32(data []byte) float32 {
 	if len(data) < 4 {
 		return 0
 	}
 	
-	// Modbus寄存器高位在前，需要调整字节序
+	// DDSU666特定字节序转换: [1,0,3,2] -> [0,1,2,3]
+	// 这种字节序在Modbus设备中很常见，特别是中国制造的电表
 	bytes := make([]byte, 4)
-	bytes[0] = data[1] // 第一个寄存器低字节
-	bytes[1] = data[0] // 第一个寄存器高字节
-	bytes[2] = data[3] // 第二个寄存器低字节
-	bytes[3] = data[2] // 第二个寄存器高字节
+	bytes[0] = data[1] // 第一个寄存器低字节 -> IEEE754最低位
+	bytes[1] = data[0] // 第一个寄存器高字节 -> IEEE754次低位
+	bytes[2] = data[3] // 第二个寄存器低字节 -> IEEE754次高位
+	bytes[3] = data[2] // 第二个寄存器高字节 -> IEEE754最高位
 	
 	bits := binary.LittleEndian.Uint32(bytes)
 	return math.Float32frombits(bits)
