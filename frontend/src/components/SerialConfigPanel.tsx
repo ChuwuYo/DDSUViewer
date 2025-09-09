@@ -9,10 +9,12 @@ import {
   HStack,
   Alert,
   NativeSelectRoot,
-  NativeSelectField
+  NativeSelectField,
+  Button,
+
 } from '@chakra-ui/react';
-import { GET_SERIAL_CONFIG, GET_AVAILABLE_PORTS } from '../graphql/queries';
-import { UPDATE_SERIAL_CONFIG } from '../graphql/mutations';
+import { GET_SERIAL_CONFIG, GET_AVAILABLE_PORTS, GET_DEVICE_STATUS } from '../graphql/queries';
+import { UPDATE_SERIAL_CONFIG, OPEN_SERIAL, CLOSE_SERIAL } from '../graphql/mutations';
 import { showErrorToast, showWarningToast, showSuccessToast } from './ErrorToast';
 
 interface SerialConfig {
@@ -29,20 +31,16 @@ export const SerialConfigPanel = () => {
   const [hexDisplay, setHexDisplay] = useState(false);
   const [slaveID, setSlaveID] = useState('');
 
-  const { data: configData } = useQuery<{ serialConfig: SerialConfig }>(GET_SERIAL_CONFIG, {
-    onError: (error: any) => {
-      showErrorToast('连接失败', `无法获取串口配置: ${error.message}`);
-    }
-  });
-  const { data: portsData } = useQuery<{ availablePorts: string[] }>(GET_AVAILABLE_PORTS, {
-    onError: (error: any) => {
-      showErrorToast('连接失败', `无法枚举串口: ${error.message}`);
-    }
-  });
+  const { data: configData } = useQuery<{ serialConfig: SerialConfig }>(GET_SERIAL_CONFIG);
+  const { data: portsData } = useQuery<{ availablePorts: string[] }>(GET_AVAILABLE_PORTS);
+  const { data: statusData } = useQuery<{ deviceStatus: { connected: boolean } }>(GET_DEVICE_STATUS, { pollInterval: 2000 });
   const [updateConfig] = useMutation(UPDATE_SERIAL_CONFIG);
+  const [openSerial] = useMutation(OPEN_SERIAL);
+  const [closeSerial] = useMutation(CLOSE_SERIAL);
 
   const config = configData?.serialConfig;
   const ports = portsData?.availablePorts || [];
+  const isConnected = statusData?.deviceStatus?.connected || false;
 
   useEffect(() => {
     if (config?.slaveID) {
@@ -68,16 +66,42 @@ export const SerialConfigPanel = () => {
     }
   };
 
+  const handleSerialToggle = async () => {
+    try {
+      if (isConnected) {
+        await closeSerial();
+        showSuccessToast('串口关闭', '串口已成功关闭');
+      } else {
+        await openSerial();
+        showSuccessToast('串口打开', '串口已成功打开');
+      }
+    } catch (error: any) {
+      showErrorToast('串口操作失败', error.message);
+    }
+  };
+
   return (
-    <Card.Root>
-      <Card.Header>
-        <Text fontSize="lg" fontWeight="semibold">串口配置</Text>
+    <Card.Root bg="white" shadow="md" borderRadius="xl" border="1px" borderColor="gray.200">
+      <Card.Header pb={2}>
+        <HStack justify="space-between" align="center">
+          <Text fontSize="lg" fontWeight="bold" color="gray.800">串口配置</Text>
+          <HStack>
+            <Text fontSize="sm" color={isConnected ? 'green.600' : 'gray.500'}>
+              {isConnected ? '已连接' : '未连接'}
+            </Text>
+            <input 
+              type="checkbox" 
+              checked={isConnected}
+              onChange={handleSerialToggle}
+            />
+          </HStack>
+        </HStack>
       </Card.Header>
-      <Card.Body>
+      <Card.Body pt={2}>
         <VStack gap={4} align="stretch">
           {/* COM 端口 */}
           <Box>
-            <Text fontSize="sm" mb={2}>COM 端口</Text>
+            <Text fontSize="sm" mb={2} fontWeight="medium" color="gray.700">COM 端口</Text>
             <NativeSelectRoot>
               <NativeSelectField 
                 value={config?.port || ''} 

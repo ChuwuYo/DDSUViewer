@@ -13,22 +13,17 @@ interface DeviceStatus {
 export const StatusPanel = () => {
   const { data, loading } = useQuery<{ deviceStatus: DeviceStatus }>(
     GET_DEVICE_STATUS,
-    { 
-      pollInterval: 2000,
-      onError: (error: any) => {
-        showErrorToast('连接失败', `无法获取设备状态: ${error.message}`);
-      }
-    }
+    { pollInterval: 2000 }
   );
 
   const status = data?.deviceStatus;
 
   return (
-    <Card.Root>
-      <Card.Header>
-        <Text fontSize="lg" fontWeight="semibold">设备状态</Text>
+    <Card.Root bg="white" shadow="md" borderRadius="xl" border="1px" borderColor="gray.200">
+      <Card.Header pb={2}>
+        <Text fontSize="lg" fontWeight="bold" color="gray.800">设备状态</Text>
       </Card.Header>
-      <Card.Body>
+      <Card.Body pt={2}>
         <VStack gap={4} align="stretch">
           {/* 连接状态 */}
           <HStack justify="space-between">

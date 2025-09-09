@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"DDSUViewer/internal/poller"
-	"DDSUViewer/internal/registers"
 	"DDSUViewer/internal/serial"
 	goserial "go.bug.st/serial"
 )
@@ -16,9 +15,9 @@ type Service struct {
 	poller       *poller.Poller
 	config       *SerialConfig
 	status       *DeviceStatus
-	lastData     *registers.ElectricalData
+	lastData     *ElectricalData
 	mutex        sync.RWMutex
-	subscribers  map[string]chan *registers.ElectricalData
+	subscribers  map[string]chan *ElectricalData
 	statusSubs   map[string]chan *DeviceStatus
 }
 
@@ -40,6 +39,19 @@ type DeviceStatus struct {
 	ErrorMessage string
 }
 
+// ElectricalData 电参量数据
+type ElectricalData struct {
+	Voltage       float64
+	Current       float64
+	ActivePower   float64
+	ReactivePower float64
+	ApparentPower float64
+	PowerFactor   float64
+	Frequency     float64
+	ActiveEnergy  float64
+	Timestamp     time.Time
+}
+
 // NewService 创建服务实例
 func NewService() *Service {
 	return &Service{
@@ -56,16 +68,16 @@ func NewService() *Service {
 			Protocol:   "Modbus RTU",
 			LastUpdate: time.Now(),
 		},
-		subscribers: make(map[string]chan *registers.ElectricalData),
+		subscribers: make(map[string]chan *ElectricalData),
 		statusSubs:  make(map[string]chan *DeviceStatus),
 	}
 }
 
 // GetElectricalData 获取最新电参量数据
-func (s *Service) GetElectricalData() *registers.ElectricalData {
+func (s *Service) GetElectricalData() *ElectricalData {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	return s.lastData
+	return s.lastData // 如果没有数据就返回 nil
 }
 
 // GetDeviceStatus 获取设备状态
@@ -162,11 +174,11 @@ func (s *Service) GetAvailablePorts() ([]string, error) {
 }
 
 // Subscribe 订阅数据更新
-func (s *Service) Subscribe(id string) <-chan *registers.ElectricalData {
+func (s *Service) Subscribe(id string) <-chan *ElectricalData {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	ch := make(chan *registers.ElectricalData, 10)
+	ch := make(chan *ElectricalData, 10)
 	s.subscribers[id] = ch
 	return ch
 }
@@ -199,7 +211,20 @@ func (s *Service) Unsubscribe(id string) {
 // listenData 监听数据更新
 func (s *Service) listenData() {
 	dataChan := s.poller.GetDataChannel()
-	for data := range dataChan {
+	for regData := range dataChan {
+		// 转换数据类型
+		data := &ElectricalData{
+			Voltage:       float64(regData.Voltage),
+			Current:       float64(regData.Current),
+			ActivePower:   float64(regData.ActivePower),
+			ReactivePower: float64(regData.ReactivePower),
+			ApparentPower: float64(regData.ApparentPower),
+			PowerFactor:   float64(regData.PowerFactor),
+			Frequency:     float64(regData.Frequency),
+			ActiveEnergy:  float64(regData.ActiveEnergy),
+			Timestamp:     time.Now(),
+		}
+
 		s.mutex.Lock()
 		s.lastData = data
 		s.status.LastUpdate = time.Now()

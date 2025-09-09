@@ -1,39 +1,54 @@
 import { ApolloProvider } from '@apollo/client/react';
-import { Box, Heading, Grid, GridItem } from '@chakra-ui/react';
+import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge } from '@chakra-ui/react';
 import { apolloClient } from './graphql/client';
 import { ElectricalDataPanel } from './components/ElectricalDataPanel';
 import { SerialConfigPanel } from './components/SerialConfigPanel';
 import { StatusPanel } from './components/StatusPanel';
-import { toaster } from './components/ErrorToast';
+import { Toaster } from './components/ErrorToast';
+
 import './App.css';
 
 function App() {
   return (
     <ApolloProvider client={apolloClient}>
-      <Box p={6} minH="100vh" bg="gray.50">
+      <Box minH="100vh" bg="gray.100">
         {/* 顶部标题栏 */}
-        <Box mb={6} p={4} bg="white" borderRadius="lg" shadow="sm">
-          <Heading as="h1" size="lg" color="blue.600">
-            DDSU666 电能表上位机
-          </Heading>
+        <Box bg="white" shadow="md" borderBottom="1px" borderColor="gray.200">
+          <Box maxW="7xl" mx="auto" px={6} py={4}>
+            <Flex align="center">
+              <Heading size="lg" color="blue.600" fontWeight="bold">
+                DDSU666 电能表上位机
+              </Heading>
+              <Spacer />
+              <Badge colorScheme="green" variant="subtle" px={3} py={1}>
+                在线监控
+              </Badge>
+            </Flex>
+          </Box>
         </Box>
 
         {/* 主要内容区域 */}
-        <Grid templateColumns="2fr 1fr" gap={6}>
-          {/* 左侧：实时数据展示 */}
-          <GridItem>
-            <ElectricalDataPanel />
-          </GridItem>
+        <Box maxW="7xl" mx="auto" p={6}>
+          <Grid 
+            templateColumns={{ base: "1fr", lg: "2fr 1fr" }} 
+            gap={6}
+            minH="calc(100vh - 120px)"
+          >
+            {/* 左侧：实时数据展示 */}
+            <GridItem>
+              <ElectricalDataPanel />
+            </GridItem>
 
-          {/* 右侧：状态监控和配置 */}
-          <GridItem>
-            <Box display="flex" flexDirection="column" gap={6}>
-              <StatusPanel />
-              <SerialConfigPanel />
-            </Box>
-          </GridItem>
-        </Grid>
-        {toaster.getToastsByPlacement('top')}
+            {/* 右侧：状态监控和配置 */}
+            <GridItem>
+              <Flex direction="column" gap={6} h="full">
+                <StatusPanel />
+                <SerialConfigPanel />
+              </Flex>
+            </GridItem>
+          </Grid>
+        </Box>
+        <Toaster />
       </Box>
     </ApolloProvider>
   );

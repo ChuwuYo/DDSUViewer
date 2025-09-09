@@ -17,3 +17,15 @@ export const STOP_POLLING = gql`
     stopPolling
   }
 `;
+
+export const OPEN_SERIAL = gql`
+  mutation OpenSerial {
+    openSerial
+  }
+`;
+
+export const CLOSE_SERIAL = gql`
+  mutation CloseSerial {
+    closeSerial
+  }
+`;

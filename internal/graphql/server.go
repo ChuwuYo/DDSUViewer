@@ -50,8 +50,24 @@ func NewServer(svc *service.Service) *Server {
 
 // Start 启动GraphQL服务器
 func (s *Server) Start(port string) error {
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", s.handler)
+	// 添加CORS中间件
+	corsHandler := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	http.Handle("/", corsHandler(playground.Handler("GraphQL playground", "/query")))
+	http.Handle("/query", corsHandler(s.handler))
 
 	log.Printf("GraphQL服务器启动在 http://localhost:%s/", port)
 	log.Printf("GraphQL Playground: http://localhost:%s/", port)

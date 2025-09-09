@@ -2,7 +2,7 @@ package graphql
 
 import (
 	"time"
-	"DDSUViewer/internal/registers"
+	"DDSUViewer/internal/service"
 )
 
 // ElectricalData 电参量数据
@@ -47,20 +47,20 @@ type SerialConfigInput struct {
 }
 
 // ConvertElectricalData 转换电参量数据
-func ConvertElectricalData(data *registers.ElectricalData) *ElectricalData {
+func ConvertElectricalData(data *service.ElectricalData) *ElectricalData {
 	if data == nil {
 		return nil
 	}
 	
 	return &ElectricalData{
-		Voltage:       float64(data.Voltage),
-		Current:       float64(data.Current),
-		ActivePower:   float64(data.ActivePower),
-		ReactivePower: float64(data.ReactivePower),
-		ApparentPower: float64(data.ApparentPower),
-		PowerFactor:   float64(data.PowerFactor),
-		Frequency:     float64(data.Frequency),
-		ActiveEnergy:  float64(data.ActiveEnergy),
-		Timestamp:     time.Now().Format(time.RFC3339),
+		Voltage:       data.Voltage,
+		Current:       data.Current,
+		ActivePower:   data.ActivePower,
+		ReactivePower: data.ReactivePower,
+		ApparentPower: data.ApparentPower,
+		PowerFactor:   data.PowerFactor,
+		Frequency:     data.Frequency,
+		ActiveEnergy:  data.ActiveEnergy,
+		Timestamp:     data.Timestamp.Format(time.RFC3339),
 	}
 }

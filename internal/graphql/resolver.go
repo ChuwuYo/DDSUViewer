@@ -51,6 +51,9 @@ func (r *mutationResolver) StopPolling(ctx context.Context) (bool, error) {
 // ElectricalData is the resolver for the electricalData field.
 func (r *queryResolver) ElectricalData(ctx context.Context) (*ElectricalData, error) {
 	data := r.service.GetElectricalData()
+	if data == nil {
+		return nil, fmt.Errorf("设备未连接或无数据")
+	}
 	return ConvertElectricalData(data), nil
 }
 
@@ -181,6 +184,8 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
+
+
 
 // !!! WARNING !!!
 // The code below was going to be deleted when updating resolvers. It has been copied here so you have
