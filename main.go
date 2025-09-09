@@ -8,6 +8,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
+// Version 应用程序版本号，通过 ldflags 设置
+var Version = "dev"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 

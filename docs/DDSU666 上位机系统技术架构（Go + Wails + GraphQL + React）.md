@@ -4,15 +4,16 @@
 
 ## ✅ 框架总览
 
-- **前端**：React 18.3 + TypeScript + Vite + Hero UI  
-- **后端**：Go + GraphQL（gqlgen）+ 串口通信（Modbus RTU）  
+- **前端**：React 18.3 + TypeScript + Vite + Chakra UI  
+- **后端**：Go + GraphQL（gqlgen）+ 单串口通信（Modbus RTU）  
 - **桌面封装**：Wails（Windows 平台，基于 WebView2）
+- **设备支持**：单个 DDSU666 设备，单个串口连接
 
 ---
 
 ## ✅ 前端技术栈（集成说明）
 
-> 项目根目录为 `DDSUViewer`，前端位于 `frontend/`，构建输出为 `frontend/dist/`。组件建议：使用 Hero UI 提供的现成组件（如卡片、表格、输入框），避免重复造轮子。
+> 项目根目录为 `DDSUViewer`，前端位于 `frontend/`，构建输出为 `frontend/dist/`。组件建议：使用 Chakra UI 提供的现成组件（如卡片、表格、输入框），避免重复造轮子。
 
 ### 核心配置步骤
 
@@ -44,28 +45,23 @@
    }
    ```
 
-3. 集成 Hero UI  
-   按照 [Hero UI 官方安装指南](https://www.heroui.com/docs/guide/installation) 进行配置：
+3. 集成 Chakra UI  
+   按照 [Chakra UI 官方安装指南](https://chakra-ui.com/getting-started) 进行配置：
 
    - 安装主库：
      ```bash
-     npm install @heroui/react
+     npm install @chakra-ui/react @emotion/react @emotion/styled framer-motion
      ```
 
-   - 添加组件（如 Card、Input、Table）：
-     ```bash
-     npx heroui add card input table
-     ```
-
-   - 在 `frontend/src/main.tsx` 中包裹 `HeroUIProvider`：
+   - 在 `frontend/src/main.tsx` 中包裹 `ChakraProvider`：
      ```tsx
-     import { HeroUIProvider } from "@heroui/react";
+     import { ChakraProvider } from "@chakra-ui/react";
 
      function App() {
        return (
-         <HeroUIProvider>
+         <ChakraProvider>
            {/* 你的组件 */}
-         </HeroUIProvider>
+         </ChakraProvider>
        );
      }
      ```
@@ -81,13 +77,13 @@
 
 ## ✅ 后端服务（Go）
 
-- 串口通信：使用 `go.bug.st/serial` 实现 RS485 串口，支持 9600 8N1（可配置）
-- Modbus RTU 协议处理：
-  - 帧构造、CRC16 校验、功能码支持（0x03 / 0x10）
+- 单串口通信：使用 `go.bug.st/serial` 实现单个 RS485 串口，支持 9600 8N1（可配置）
+- Modbus RTU 协议处理（单设备）：
+  - 帧构造、CRC16 校验、功能码支持（0x03 读寄存器）
+  - 用户手动输入从站地址（为空时提示用户）
 - 协议探测机制：
   - 初次发送标准 Modbus 测试帧
-  - 若无响应，尝试 DL/T645 帧头探测
-  - 若确认非 Modbus RTU，提示用户切换协议
+  - 基础连接测试
 - GraphQL 接口（gqlgen）：
   - Query：读取电参量、设备状态
   - Mutation：修改串口参数、启动/停止采集
@@ -105,19 +101,24 @@
 
 - 实时数据展示：
   - 显示电压、电流、功率、频率、电能等字段
-  - 使用 Hero UI 提供的卡片或表格组件展示数值
+  - 使用 Chakra UI 提供的卡片或表格组件展示数值
   - 不做复杂图表，仅展示字段名称与数值即可
 
 - 串口配置界面：
-  - 支持波特率、数据位、停止位、地址设置（通过 Mutation 写入）
-  - 自动扫描：
-    - 枚举 COM 端口
-    - 轮询常见波特率，识别设备后填充推荐参数
+  - COM 端口下拉框（基于 Windows 已连接的串口）
+  - 手动输入从站地址（为空时提示用户）
+  - Hex发送按钮（控制发送数据格式）
+  - Hex显示按钮（控制接收数据显示格式）
+  - 波特率下拉框（4800, 9600, 19200, 38400, 115200）
+  - 数据位下拉框（7, 8）
+  - 停止位下拉框（1, 2）
+  - 校验位下拉框（None, Even, Odd）
+  - 基础扫描功能：
+    - 枚举 Windows COM 端口列表
 
 - 状态监控：
   - 串口连接状态（连接/未连接）
   - 协议识别状态（Modbus / DL/T645）
-  - 数据刷新延迟（可选）
 
 - 错误提示：
   - 使用顶部弹窗组件提示 CRC 错误、超时、设备异常等
@@ -153,7 +154,7 @@
 
 ## 🔒 稳定性建议
 
-- 串口访问需互斥，建议使用专用 goroutine 控制写入
+- 单串口访问互斥，使用专用 goroutine 控制读写
 - 应用退出时关闭串口并清理资源
-- 写入配置前进行校验，避免误写导致设备异常
-- 通信异常限于当前通道，不影响其他设备轮询
+- 单设备配置校验，避免误写
+- 通信异常基础处理
