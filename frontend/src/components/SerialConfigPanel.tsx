@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { 
   Box, 
   Card, 
   Text, 
-  Button, 
   Input, 
-  Select,
   VStack,
   HStack,
-  Switch,
-  Alert
+  Alert,
+  NativeSelectRoot,
+  NativeSelectField
 } from '@chakra-ui/react';
 import { GET_SERIAL_CONFIG, GET_AVAILABLE_PORTS } from '../graphql/queries';
 import { UPDATE_SERIAL_CONFIG } from '../graphql/mutations';
@@ -31,12 +30,12 @@ export const SerialConfigPanel = () => {
   const [slaveID, setSlaveID] = useState('');
 
   const { data: configData } = useQuery<{ serialConfig: SerialConfig }>(GET_SERIAL_CONFIG, {
-    onError: (error) => {
+    onError: (error: any) => {
       showErrorToast('连接失败', `无法获取串口配置: ${error.message}`);
     }
   });
   const { data: portsData } = useQuery<{ availablePorts: string[] }>(GET_AVAILABLE_PORTS, {
-    onError: (error) => {
+    onError: (error: any) => {
       showErrorToast('连接失败', `无法枚举串口: ${error.message}`);
     }
   });
@@ -79,21 +78,17 @@ export const SerialConfigPanel = () => {
           {/* COM 端口 */}
           <Box>
             <Text fontSize="sm" mb={2}>COM 端口</Text>
-            <Select.Root 
-              value={config?.port || ''} 
-              onValueChange={(e) => handleConfigUpdate('port', e.value)}
-            >
-              <Select.Trigger>
-                <Select.ValueText placeholder="选择端口" />
-              </Select.Trigger>
-              <Select.Content>
+            <NativeSelectRoot>
+              <NativeSelectField 
+                value={config?.port || ''} 
+                onChange={(e) => handleConfigUpdate('port', e.target.value)}
+              >
+                <option value="">选择端口</option>
                 {ports.map(port => (
-                  <Select.Item key={port} value={port}>
-                    {port}
-                  </Select.Item>
+                  <option key={port} value={port}>{port}</option>
                 ))}
-              </Select.Content>
-            </Select.Root>
+              </NativeSelectField>
+            </NativeSelectRoot>
           </Box>
 
           {/* 从站地址 */}
@@ -124,84 +119,80 @@ export const SerialConfigPanel = () => {
           {/* 波特率 */}
           <Box>
             <Text fontSize="sm" mb={2}>波特率</Text>
-            <Select.Root 
-              value={config?.baudRate?.toString() || '9600'}
-              onValueChange={(e) => handleConfigUpdate('baudRate', parseInt(e.value))}
-            >
-              <Select.Trigger>
-                <Select.ValueText />
-              </Select.Trigger>
-              <Select.Content>
-                <Select.Item value="4800">4800</Select.Item>
-                <Select.Item value="9600">9600</Select.Item>
-                <Select.Item value="19200">19200</Select.Item>
-                <Select.Item value="38400">38400</Select.Item>
-                <Select.Item value="115200">115200</Select.Item>
-              </Select.Content>
-            </Select.Root>
+            <NativeSelectRoot>
+              <NativeSelectField 
+                value={config?.baudRate?.toString() || '9600'}
+                onChange={(e) => handleConfigUpdate('baudRate', parseInt(e.target.value))}
+              >
+                <option value="4800">4800</option>
+                <option value="9600">9600</option>
+                <option value="19200">19200</option>
+                <option value="38400">38400</option>
+                <option value="115200">115200</option>
+              </NativeSelectField>
+            </NativeSelectRoot>
           </Box>
 
           {/* 数据位 */}
           <Box>
             <Text fontSize="sm" mb={2}>数据位</Text>
-            <Select.Root 
-              value={config?.dataBits?.toString() || '8'}
-              onValueChange={(e) => handleConfigUpdate('dataBits', parseInt(e.value))}
-            >
-              <Select.Trigger>
-                <Select.ValueText />
-              </Select.Trigger>
-              <Select.Content>
-                <Select.Item value="7">7</Select.Item>
-                <Select.Item value="8">8</Select.Item>
-              </Select.Content>
-            </Select.Root>
+            <NativeSelectRoot>
+              <NativeSelectField 
+                value={config?.dataBits?.toString() || '8'}
+                onChange={(e) => handleConfigUpdate('dataBits', parseInt(e.target.value))}
+              >
+                <option value="7">7</option>
+                <option value="8">8</option>
+              </NativeSelectField>
+            </NativeSelectRoot>
           </Box>
 
           {/* 停止位 */}
           <Box>
             <Text fontSize="sm" mb={2}>停止位</Text>
-            <Select.Root 
-              value={config?.stopBits?.toString() || '1'}
-              onValueChange={(e) => handleConfigUpdate('stopBits', parseInt(e.value))}
-            >
-              <Select.Trigger>
-                <Select.ValueText />
-              </Select.Trigger>
-              <Select.Content>
-                <Select.Item value="1">1</Select.Item>
-                <Select.Item value="2">2</Select.Item>
-              </Select.Content>
-            </Select.Root>
+            <NativeSelectRoot>
+              <NativeSelectField 
+                value={config?.stopBits?.toString() || '1'}
+                onChange={(e) => handleConfigUpdate('stopBits', parseInt(e.target.value))}
+              >
+                <option value="1">1</option>
+                <option value="2">2</option>
+              </NativeSelectField>
+            </NativeSelectRoot>
           </Box>
 
           {/* 校验位 */}
           <Box>
             <Text fontSize="sm" mb={2}>校验位</Text>
-            <Select.Root 
-              value={config?.parity || 'None'}
-              onValueChange={(e) => handleConfigUpdate('parity', e.value)}
-            >
-              <Select.Trigger>
-                <Select.ValueText />
-              </Select.Trigger>
-              <Select.Content>
-                <Select.Item value="None">None</Select.Item>
-                <Select.Item value="Even">Even</Select.Item>
-                <Select.Item value="Odd">Odd</Select.Item>
-              </Select.Content>
-            </Select.Root>
+            <NativeSelectRoot>
+              <NativeSelectField 
+                value={config?.parity || 'None'}
+                onChange={(e) => handleConfigUpdate('parity', e.target.value)}
+              >
+                <option value="None">None</option>
+                <option value="Even">Even</option>
+                <option value="Odd">Odd</option>
+              </NativeSelectField>
+            </NativeSelectRoot>
           </Box>
 
           {/* Hex 控制 */}
           <VStack gap={2} align="stretch">
             <HStack justify="space-between">
               <Text fontSize="sm">Hex 发送</Text>
-              <Switch checked={hexSend} onCheckedChange={setHexSend} />
+              <input 
+                type="checkbox" 
+                checked={hexSend} 
+                onChange={(e) => setHexSend(e.target.checked)} 
+              />
             </HStack>
             <HStack justify="space-between">
               <Text fontSize="sm">Hex 显示</Text>
-              <Switch checked={hexDisplay} onCheckedChange={setHexDisplay} />
+              <input 
+                type="checkbox" 
+                checked={hexDisplay} 
+                onChange={(e) => setHexDisplay(e.target.checked)} 
+              />
             </HStack>
           </VStack>
         </VStack>

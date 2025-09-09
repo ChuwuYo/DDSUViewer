@@ -1,4 +1,4 @@
-import { ApolloProvider } from '@apollo/client';
+import { ApolloProvider } from '@apollo/client/react';
 import { Box, Heading, Grid, GridItem } from '@chakra-ui/react';
 import { apolloClient } from './graphql/client';
 import { ElectricalDataPanel } from './components/ElectricalDataPanel';

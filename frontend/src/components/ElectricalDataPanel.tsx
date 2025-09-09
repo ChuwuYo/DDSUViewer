@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { Box, Card, SimpleGrid, Text, Badge, Spinner } from '@chakra-ui/react';
 import { GET_ELECTRICAL_DATA } from '../graphql/queries';
 import { showErrorToast } from './ErrorToast';
@@ -37,7 +37,7 @@ export const ElectricalDataPanel = () => {
     GET_ELECTRICAL_DATA,
     { 
       pollInterval: 1000,
-      onError: (error) => {
+      onError: (error: any) => {
         showErrorToast('数据异常', `无法获取电参量数据: ${error.message}`);
       }
     }

@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { Box, Card, Text, Badge, VStack, HStack } from '@chakra-ui/react';
 import { GET_DEVICE_STATUS } from '../graphql/queries';
 import { showErrorToast } from './ErrorToast';
@@ -15,7 +15,7 @@ export const StatusPanel = () => {
     GET_DEVICE_STATUS,
     { 
       pollInterval: 2000,
-      onError: (error) => {
+      onError: (error: any) => {
         showErrorToast('连接失败', `无法获取设备状态: ${error.message}`);
       }
     }
