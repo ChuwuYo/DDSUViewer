@@ -10,9 +10,9 @@
   - [ ] 安装 @chakra-ui/react
   - [ ] 配置 ChakraProvider
   - [ ] 添加基础组件 (Card, Input, Select, Button)
-- [ ] 集成 GraphQL 客户端
-  - [ ] 安装 Apollo Client
-  - [ ] 配置 GraphQL 客户端连接
+- [x] 集成 GraphQL 客户端
+  - [x] 安装 Apollo Client
+  - [x] 配置 GraphQL 客户端连接
 
 ## 🔌 后端核心模块开发
 
