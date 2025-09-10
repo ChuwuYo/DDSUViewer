@@ -5,22 +5,17 @@ go 1.23.0
 toolchain go1.24.3
 
 require (
-	github.com/99designs/gqlgen v0.17.78
-	github.com/gorilla/websocket v1.5.3
-	github.com/vektah/gqlparser/v2 v2.5.30
 	github.com/wailsapp/wails/v2 v2.10.2
 	go.bug.st/serial v1.6.4
 )
 
 require (
-	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/creack/goselect v0.1.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/labstack/echo/v4 v4.13.3 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
@@ -34,7 +29,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.49.1 // indirect
-	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/tkrajina/go-reflector v0.5.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
