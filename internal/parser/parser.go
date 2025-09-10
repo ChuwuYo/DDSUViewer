@@ -12,52 +12,63 @@ func NewDataParser() *DataParser {
 	return &DataParser{}
 }
 
-// FilterElectricalData 过滤电参量数据
+// FilterElectricalData 过滤电参量数据，适配小数值场景
 func (p *DataParser) FilterElectricalData(data *registers.ElectricalData) *registers.ElectricalData {
 	if data == nil {
 		return nil
 	}
 
-	filtered := &registers.ElectricalData{}
-
-	// 过滤电压
-	if registers.IsValidFloat32(data.Voltage) && data.Voltage >= 0 && data.Voltage <= 1000 {
-		filtered.Voltage = data.Voltage
+	// 创建数据副本进行过滤
+	filtered := &registers.ElectricalData{
+		Voltage:       data.Voltage,
+		Current:       data.Current,
+		ActivePower:   data.ActivePower,
+		ReactivePower: data.ReactivePower,
+		ApparentPower: data.ApparentPower,
+		PowerFactor:   data.PowerFactor,
+		Frequency:     data.Frequency,
+		ActiveEnergy:  data.ActiveEnergy,
 	}
 
-	// 过滤电流
-	if registers.IsValidFloat32(data.Current) && data.Current >= 0 && data.Current <= 100 {
-		filtered.Current = data.Current
+	// 应用极宽松的数据过滤规则，支持所有合理数值
+	// 电压范围：-1000V - 无上限
+	if filtered.Voltage < -1000.0 {
+		filtered.Voltage = 0
 	}
 
-	// 过滤有功功率
-	if registers.IsValidFloat32(data.ActivePower) {
-		filtered.ActivePower = data.ActivePower
+	// 电流范围：-1000A - 无上限
+	if filtered.Current < -1000.0 {
+		filtered.Current = 0
 	}
 
-	// 过滤无功功率
-	if registers.IsValidFloat32(data.ReactivePower) {
-		filtered.ReactivePower = data.ReactivePower
+	// 有功功率范围：-1000W - 无上限
+	if filtered.ActivePower < -1000.0 {
+		filtered.ActivePower = 0
 	}
 
-	// 过滤视在功率
-	if registers.IsValidFloat32(data.ApparentPower) && data.ApparentPower >= 0 {
-		filtered.ApparentPower = data.ApparentPower
+	// 无功功率范围：-1000W - 无上限
+	if filtered.ReactivePower < -1000.0 {
+		filtered.ReactivePower = 0
 	}
 
-	// 过滤功率因数
-	if registers.IsValidFloat32(data.PowerFactor) && data.PowerFactor >= -1 && data.PowerFactor <= 1 {
-		filtered.PowerFactor = data.PowerFactor
+	// 视在功率范围：-1000W - 无上限
+	if filtered.ApparentPower < -1000.0 {
+		filtered.ApparentPower = 0
 	}
 
-	// 过滤频率
-	if registers.IsValidFloat32(data.Frequency) && data.Frequency >= 45 && data.Frequency <= 65 {
-		filtered.Frequency = data.Frequency
+	// 频率范围：-1000Hz - 无上限
+	if filtered.Frequency < -1000.0 {
+		filtered.Frequency = 0
 	}
 
-	// 过滤有功总电能
-	if registers.IsValidFloat32(data.ActiveEnergy) && data.ActiveEnergy >= 0 {
-		filtered.ActiveEnergy = data.ActiveEnergy
+	// 功率因数范围：-1000 - 无上限
+	if filtered.PowerFactor < -1000.0 {
+		filtered.PowerFactor = 0
+	}
+
+	// 电能值：-1000kWh - 无上限
+	if filtered.ActiveEnergy < -1000.0 {
+		filtered.ActiveEnergy = 0
 	}
 
 	return filtered

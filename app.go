@@ -44,10 +44,11 @@ func (a *App) GetAvailablePorts() []string {
 func (a *App) GetElectricalData() map[string]interface{} {
 	data := a.service.GetElectricalData()
 	if data == nil {
+		log.Printf("Wails.GetElectricalData: 返回nil (无数据)")
 		return nil
 	}
 	
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"voltage":       data.Voltage,
 		"current":       data.Current,
 		"activePower":   data.ActivePower,
@@ -58,6 +59,11 @@ func (a *App) GetElectricalData() map[string]interface{} {
 		"activeEnergy":  data.ActiveEnergy,
 		"timestamp":     data.Timestamp.Format("2006-01-02T15:04:05Z07:00"),
 	}
+	
+	log.Printf("Wails.GetElectricalData: 返回数据 电压=%.3f, 电流=%.6f, 功率=%.3f, 频率=%.3f, 电能=%.3f",
+		data.Voltage, data.Current, data.ActivePower, data.Frequency, data.ActiveEnergy)
+	
+	return result
 }
 
 // StartPolling 启动数据采集 (Wails方法)

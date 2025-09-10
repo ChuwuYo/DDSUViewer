@@ -46,7 +46,9 @@ func (r *queryResolver) ElectricalData(ctx context.Context) (*ElectricalData, er
 	if data == nil {
 		return nil, fmt.Errorf("设备未连接或无数据")
 	}
-	return ConvertElectricalData(data), nil
+	converted := ConvertElectricalData(data)
+	fmt.Printf("GraphQL返回数据: %+v\n", converted) // 调试日志
+	return converted, nil
 }
 
 // DeviceStatus is the resolver for the deviceStatus field.

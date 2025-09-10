@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -58,12 +59,12 @@ type ElectricalData struct {
 func NewService() *Service {
 	return &Service{
 		config: &SerialConfig{
-			Port:     "COM1",
+			Port:     "", // 用户选择端口
 			BaudRate: 9600,
 			DataBits: 8,
 			StopBits: goserial.OneStopBit,
 			Parity:   goserial.NoParity,
-			SlaveID:  12,
+			SlaveID:  0, // 未设置，需要用户配置
 		},
 		status: &DeviceStatus{
 			Connected:  false,
@@ -79,6 +80,7 @@ func NewService() *Service {
 func (s *Service) GetElectricalData() *ElectricalData {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
+	
 	return s.lastData // 如果没有数据就返回 nil
 }
 
@@ -129,6 +131,16 @@ func (s *Service) StartPolling() error {
 		s.status.ErrorMessage = err.Error()
 		return err
 	}
+	
+	// 检查从站地址
+	if s.config.SlaveID == 0 {
+		err := fmt.Errorf("请设置从站地址")
+		s.status.Connected = false
+		s.status.ErrorMessage = err.Error()
+		return err
+	}
+	
+	log.Printf("使用配置: 端口=%s, 从站地址=0x%02X", s.config.Port, s.config.SlaveID)
 
 	// 创建串口连接
 	serialConfig := serial.Config{

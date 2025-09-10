@@ -27,10 +27,9 @@ class AppStore {
   private data: ElectricalData | null = null;
   private listeners: Set<() => void> = new Set();
   private dataInterval: number | null = null;
-  private totalEnergy: number = 12345.67; // 电能累计值
 
   constructor() {
-    this.startDataGeneration();
+    this.startDataPolling();
   }
 
   getStatus(): DeviceStatus {
@@ -55,53 +54,39 @@ class AppStore {
     this.listeners.forEach(listener => listener());
   }
 
-  private startDataGeneration() {
+  private startDataPolling() {
     this.dataInterval = window.setInterval(async () => {
       if (this.status.connected) {
-        // 尝试获取真实数据
-        let realData = null;
+        // 获取真实数据
         try {
           // @ts-ignore
           const { GetElectricalData } = window.go?.main?.App || {};
           if (GetElectricalData) {
-            realData = await GetElectricalData();
+            const realData = await GetElectricalData();
+            if (realData && this.isValidElectricalData(realData)) {
+              this.data = {
+                voltage: this.formatNumber(realData.voltage, 1),
+                current: this.formatNumber(realData.current, 6),
+                activePower: this.formatNumber(realData.activePower, 3),
+                reactivePower: this.formatNumber(realData.reactivePower, 3),
+                apparentPower: this.formatNumber(realData.apparentPower, 3),
+                powerFactor: this.formatNumber(realData.powerFactor, 3),
+                frequency: this.formatNumber(realData.frequency, 2),
+                activeEnergy: this.formatNumber(realData.activeEnergy, 3),
+                timestamp: realData.timestamp || new Date().toISOString(),
+              };
+              this.notifyListeners();
+            } else {
+              // 保持上一次的有效数据，而不是清空
+              if (!this.data) {
+                this.data = null;
+                this.notifyListeners();
+              }
+            }
           }
         } catch (error) {
-          realData = null;
+          // 发生错误时保持上一次的数据，静默处理
         }
-        
-        if (realData && this.hasValidData(realData)) {
-          // 有真实数据，使用真实数据
-          this.data = {
-            voltage: realData.voltage || 0,
-            current: realData.current || 0,
-            activePower: realData.activePower || 0,
-            reactivePower: realData.reactivePower || 0,
-            apparentPower: realData.apparentPower || 0,
-            powerFactor: realData.powerFactor || 0,
-            frequency: realData.frequency || 0,
-            activeEnergy: realData.activeEnergy || 0,
-            timestamp: realData.timestamp || new Date().toISOString(),
-          };
-        } else {
-          // 没有真实数据，使用模拟数据
-          const currentPower = 1000 + Math.random() * 200; // 当前功率
-          // 按照当前功率累计电能（每秒增加 = 功率/3600）
-          this.totalEnergy += currentPower / 3600;
-          
-          this.data = {
-            voltage: 220 + Math.random() * 10,
-            current: 5 + Math.random() * 2,
-            activePower: currentPower,
-            reactivePower: 100 + Math.random() * 50,
-            apparentPower: 1010 + Math.random() * 200,
-            powerFactor: 0.95 + Math.random() * 0.05,
-            frequency: 50 + Math.random() * 0.1,
-            activeEnergy: Math.round(this.totalEnergy * 100) / 100, // 保疙2位小数
-            timestamp: new Date().toISOString(),
-          };
-        }
-        this.notifyListeners();
       } else {
         this.data = null;
         this.notifyListeners();
@@ -109,21 +94,39 @@ class AppStore {
     }, 1000);
   }
 
-  private hasValidData(data: any): boolean {
-    // 检查后端是否返回了有效的真实数据
+  // 验证电参量数据的有效性
+  private isValidElectricalData(data: any): boolean {
     if (!data) return false;
     
-    // 检查是否有任何非零数值（说明设备有数据返回）
-    return (
-      (data.voltage && data.voltage > 0) ||
-      (data.current && data.current > 0) ||
-      (data.activePower && data.activePower !== 0) ||
-      (data.reactivePower && data.reactivePower !== 0) ||
-      (data.apparentPower && data.apparentPower > 0) ||
-      (data.powerFactor && data.powerFactor > 0) ||
-      (data.frequency && data.frequency > 0) ||
-      (data.activeEnergy && data.activeEnergy > 0)
-    );
+    // 至少需要有一个有效的主要参数
+    const hasValidVoltage = data.voltage && data.voltage > 0;
+    const hasValidCurrent = data.current && data.current > 0;
+    const hasValidPower = data.activePower && data.activePower > 0;
+    const hasValidFrequency = data.frequency && data.frequency > 0;
+    const hasValidEnergy = data.activeEnergy !== undefined && data.activeEnergy >= 0;
+    
+    // 至少需要电压或频率其中一个有效，表示设备通信正常
+    let isValid = hasValidVoltage || hasValidFrequency;
+    
+    // 如果有电流或功率，也认为是有效数据
+    if (hasValidCurrent || hasValidPower) {
+      isValid = true;
+    }
+    
+    // 如果只有电能数据也认为是有效的（可能是待机状态）
+    if (hasValidEnergy && data.activeEnergy > 0) {
+      isValid = true;
+    }
+    
+    return isValid;
+  }
+
+  // 格式化数字，保留指定小数位数
+  private formatNumber(value: number | undefined, decimals: number): number {
+    if (value === undefined || value === null || isNaN(value)) {
+      return 0;
+    }
+    return Number(value.toFixed(decimals));
   }
 }
 

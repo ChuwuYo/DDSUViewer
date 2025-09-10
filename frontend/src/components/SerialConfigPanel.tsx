@@ -173,8 +173,8 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
 };
 
 export const SerialConfigPanel = () => {
-  const [slaveID, setSlaveID] = useState('0C');
-  const [originalSlaveID, setOriginalSlaveID] = useState('0C');
+  const [slaveID, setSlaveID] = useState('');
+  const [originalSlaveID, setOriginalSlaveID] = useState('');
   const [ports, setPorts] = useState<string[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const [config, setConfig] = useState<SerialConfig>({
@@ -231,9 +231,7 @@ export const SerialConfigPanel = () => {
 
   const handleSlaveIDChange = (value: string) => {
     setSlaveID(value.toUpperCase());
-    if (!value.trim()) {
-      showToast('请输入从站地址后再进行通信', 'warning');
-    }
+    // 不在输入时显示警告，只在尝试连接时检查
   };
 
   const handleSerialToggle = () => {
@@ -245,6 +243,11 @@ export const SerialConfigPanel = () => {
     } else {
       if (!config.port) {
         showToast('请先选择串口', 'error');
+        return;
+      }
+      
+      if (!slaveID.trim()) {
+        showToast('请先设置从站地址', 'error');
         return;
       }
       
@@ -306,9 +309,9 @@ export const SerialConfigPanel = () => {
 
             {/* 从站地址 */}
             <Box>
-              <Text fontSize="sm" mb={2}>从站地址</Text>
+              <Text fontSize="sm" mb={2}>从站地址 *</Text>
               <Input
-                placeholder="请输入从站地址 (如: 0C)"
+                placeholder="必填：请输入从站地址 (十六进制，如: 0C)"
                 value={slaveID}
                 onChange={(e) => handleSlaveIDChange(e.target.value)}
                 onBlur={() => {
@@ -323,9 +326,10 @@ export const SerialConfigPanel = () => {
                     }
                   }
                 }}
+                borderColor={!slaveID.trim() ? "red.300" : "gray.200"}
               />
               {!slaveID.trim() && (
-                <Text fontSize="xs" color="orange.500" mt={1}>请输入从站地址</Text>
+                <Text fontSize="xs" color="red.500" mt={1}>❗ 从站地址不能为空，请联系设备供应商获取</Text>
               )}
             </Box>
 
