@@ -125,7 +125,7 @@ func CalculateCRC16(data []byte) uint16 {
 - 多项式: 0xA001 (反向)
 - 标准 Modbus CRC16 算法
 
-## DDSU666 特定实现
+## DDSU666 数据格式
 
 ### 1. 寄存器地址映射
 
@@ -144,33 +144,25 @@ const (
 
 ### 2. 数据类型处理
 
-DDSU666 使用 IEEE754 单精度浮点数格式，但采用特殊的字节序：
+DDSU666 使用标准的 IEEE754 单精度浮点数格式：
 
 ```go
-// ParseFloat32 解析DDSU666的IEEE754浮点数
-// DDSU666使用"字交换小端序"(Word-Swapped Little-Endian)
+// ParseFloat32 解析IEEE754浮点数
 func ParseFloat32(data []byte) float32 {
     if len(data) < 4 {
         return 0
     }
-    
-    // 字节重排: [Reg1_Hi, Reg1_Lo, Reg2_Hi, Reg2_Lo] 
-    //        -> [Reg1_Lo, Reg1_Hi, Reg2_Lo, Reg2_Hi]
-    bytes := make([]byte, 4)
-    bytes[0] = data[1]  // 第一个寄存器低字节
-    bytes[1] = data[0]  // 第一个寄存器高字节  
-    bytes[2] = data[3]  // 第二个寄存器低字节
-    bytes[3] = data[2]  // 第二个寄存器高字节
-    
-    bits := binary.LittleEndian.Uint32(bytes)
+
+    // DDSU666使用IEEE 754标准大端序格式
+    bits := binary.BigEndian.Uint32(data)
     return math.Float32frombits(bits)
 }
 ```
 
 **字节序说明**:
-- 标准 IEEE754: [B0, B1, B2, B3]
-- DDSU666 传输: [B1, B0, B3, B2]
-- 需要重新排列后解析
+- 标准 IEEE754 大端序: [B0, B1, B2, B3]
+- DDSU666 传输格式: [B0, B1, B2, B3]
+- 与标准网络字节序一致，无需额外转换
 
 ### 3. 批量读取优化
 
@@ -201,6 +193,7 @@ func (p *Poller) readElectricalRegisters() *registers.ElectricalData {
 - 单次读取多个连续寄存器
 - 减少通信次数提高效率
 - 跳过保留地址避免错误
+- 使用标准IEEE754大端序直接解析
 
 ## 通信参数配置
 
