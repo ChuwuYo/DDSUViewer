@@ -55,6 +55,8 @@ wails dev
 
 ### 构建应用
 
+#### 使用 Wails 命令构建
+
 ```bash
 # 标准构建
 wails build
@@ -65,6 +67,30 @@ wails build -ldflags="-X main.Version=1.0.0"
 # 压缩构建
 wails build -ldflags="-s -w" -upx
 ```
+
+#### 使用 PowerShell 构建脚本
+
+项目提供了两个 PowerShell 构建脚本：
+
+1. [build.ps1](file:///E:/1Chuwu/Goprojects/DDSUViewer/build.ps1) - 标准构建脚本
+2. [upxbuild.ps1](file:///E:/1Chuwu/Goprojects/DDSUViewer/upxbuild.ps1) - UPX压缩构建脚本
+
+使用方法：
+
+```powershell
+# 使用特定版本号进行标准构建
+.\build.ps1 -Version "1.0.0"
+
+# 使用特定版本号进行UPX压缩构建（前提是您有安装upx）
+.\upxbuild.ps1 -Version "1.0.0"
+```
+
+两个脚本都会自动：
+1. 更新 [wails.json](file:///E:/1Chuwu/Goprojects/DDSUViewer/wails.json) 中的 productVersion
+2. 执行 Wails 构建命令
+3. 将版本号传递给应用程序
+
+UPX压缩构建会进一步减小可执行文件大小，但需要系统上已安装 UPX 工具。
 
 构建完成后，可执行文件位于 `build/bin/DDSUViewer.exe`
 
@@ -100,33 +126,31 @@ wails build -ldflags="-s -w" -upx
 
 ```
 DDSUViewer/
-├── docs/                    # 项目文档目录
-│   ├── steering/           # 技术指导文档
-│   └── *.pdf              # 设备说明书
-├── frontend/               # 前端代码
-│   ├── src/
-│   │   ├── components/    # React 组件
-│   │   ├── hooks/         # 自定义 Hooks
-│   │   ├── store/         # 状态管理
-│   │   └── theme/         # 主题配置
-│   └── wailsjs/           # Wails 生成的绑定文件
-├── internal/              # 后端内部包
-│   ├── modbus/           # Modbus 协议实现
-│   ├── serial/           # 串口通信
-│   ├── registers/        # 寄存器定义和解析
-│   ├── poller/           # 数据轮询器
-│   ├── service/          # 业务服务层
-│   ├── parser/           # 数据解析器
-│   └── protocol_detector/ # 协议检测器
-├── app.go                # Wails 应用入口
-├── main.go               # 程序主入口
-├── wails.json            # Wails 配置文件
-└── go.mod                # Go 模块定义
+├── app.go              # Wails 应用主入口
+├── main.go             # 程序入口点
+├── build.ps1           # PowerShell 标准构建脚本
+├── upxbuild.ps1        # PowerShell UPX压缩构建脚本
+├── internal/           # 后端核心代码
+│   ├── modbus/        # Modbus 协议实现
+│   ├── serial/        # 串口通信
+│   ├── registers/     # 寄存器定义和解析
+│   ├── poller/        # 数据轮询器
+│   ├── service/       # 业务服务层
+│   └── parser/        # 数据解析器
+├── frontend/           # 前端代码
+│   ├── src/           # React 源代码
+│   └── wailsjs/       # Wails 生成的绑定文件
+└── docs/              # 项目文档
 ```
 
 ## 开发文档
 
-详细的技术文档位于 [docs/steering/](docs/steering/) 目录
+详细的技术文档位于 [docs/steering/](docs/steering/) 目录：
+
+- [01-项目概述.md](docs/steering/01-项目概述.md) - 项目整体介绍
+- [03-Modbus协议实现.md](docs/steering/03-Modbus协议实现.md) - Modbus 协议实现细节
+- [06-开发环境配置.md](docs/steering/06-开发环境配置.md) - 开发环境搭建指南
+- [08-DDSU666字节序验证.md](docs/steering/08-DDSU666字节序验证.md) - 字节序验证报告
 
 ## 许可证
 
