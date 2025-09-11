@@ -88,8 +88,11 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
 
 const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const [dropdownMaxHeight, setDropdownMaxHeight] = useState<number>(200);
   const selectRef = useRef<HTMLDivElement>(null);
 
+  // 关闭时点击外部收起
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
@@ -100,12 +103,68 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 根据当前元素位置以及窗口空间计算展开方向和最大高度
+  const computeDropdownPosition = useCallback(() => {
+    const DROPDOWN_MAX_HEIGHT = 200;
+    const DROPDOWN_MIN_HEIGHT = 40;
+    const DROPDOWN_VIEWPORT_MARGIN = 8;
+    const ESTIMATED_ITEM_HEIGHT = 40; // 每项估算高度（包括间距），可根据样式微调
+
+    if (!selectRef.current) return;
+    const rect = selectRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const desiredHeight = Math.min(DROPDOWN_MAX_HEIGHT, options.length * ESTIMATED_ITEM_HEIGHT);
+
+    if (spaceBelow >= desiredHeight) {
+      setOpenUp(false);
+      setDropdownMaxHeight(Math.min(desiredHeight, Math.max(DROPDOWN_MIN_HEIGHT, spaceBelow - DROPDOWN_VIEWPORT_MARGIN)));
+      return;
+    }
+
+    if (spaceAbove >= desiredHeight) {
+      setOpenUp(true);
+      setDropdownMaxHeight(Math.min(desiredHeight, Math.max(DROPDOWN_MIN_HEIGHT, spaceAbove - DROPDOWN_VIEWPORT_MARGIN)));
+      return;
+    }
+
+    // 两边都不足，选择可用空间更大的方向并尽量适配
+    if (spaceBelow >= spaceAbove) {
+      setOpenUp(false);
+      setDropdownMaxHeight(Math.max(DROPDOWN_MIN_HEIGHT, spaceBelow - DROPDOWN_VIEWPORT_MARGIN));
+    } else {
+      setOpenUp(true);
+      setDropdownMaxHeight(Math.max(DROPDOWN_MIN_HEIGHT, spaceAbove - DROPDOWN_VIEWPORT_MARGIN));
+    }
+  }, [options.length]);
+
+  // 在打开时计算位置，同时绑定 resize/scroll 以动态调整
+  useEffect(() => {
+    if (!isOpen) return;
+    computeDropdownPosition();
+    const handleWindowChange = () => computeDropdownPosition();
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true); // 捕获滚动容器变化
+    return () => {
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+    };
+  }, [isOpen, computeDropdownPosition]);
+
   const selectedOption = options.find(opt => opt.value === value);
+
+  const toggleOpen = () => {
+    // 如果将要打开，先计算方向
+    if (!isOpen) {
+      computeDropdownPosition();
+    }
+    setIsOpen(!isOpen);
+  };
 
   return (
     <div ref={selectRef} style={{ position: 'relative' }}>
       <div
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         style={{
           width: '100%',
           padding: '8px 12px',
@@ -130,15 +189,16 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
         <div
           style={{
             position: 'absolute',
-            top: '100%',
             left: 0,
             right: 0,
+            top: openUp ? undefined : '100%',
+            bottom: openUp ? '100%' : undefined,
             backgroundColor: 'white',
             border: `1px solid ${mdColors.outlineVariant}`,
             borderRadius: '6px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             zIndex: 1000,
-            maxHeight: '200px',
+            maxHeight: `${dropdownMaxHeight}px`,
             overflowY: 'auto'
           }}
         >
@@ -329,7 +389,7 @@ export const SerialConfigPanel = () => {
                 borderColor={!slaveID.trim() ? "red.300" : "gray.200"}
               />
               {!slaveID.trim() && (
-                <Text fontSize="xs" color="red.500" mt={1}>❗ 从站地址不能为空，请联系设备供应商获取</Text>
+                <Text fontSize="xs" color="red.500" mt={1}>❗ 从站地址不能为空，请查看电能表</Text>
               )}
             </Box>
 
