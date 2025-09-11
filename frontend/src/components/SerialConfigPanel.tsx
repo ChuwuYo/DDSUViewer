@@ -105,32 +105,36 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
 
   // 根据当前元素位置以及窗口空间计算展开方向和最大高度
   const computeDropdownPosition = useCallback(() => {
+    const DROPDOWN_MAX_HEIGHT = 200;
+    const DROPDOWN_MIN_HEIGHT = 40;
+    const DROPDOWN_VIEWPORT_MARGIN = 8;
+    const ESTIMATED_ITEM_HEIGHT = 40; // 每项估算高度（包括间距），可根据样式微调
+
     if (!selectRef.current) return;
     const rect = selectRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const estimatedItemHeight = 40; // 每项估算高度（包括间距），可根据样式微调
-    const desiredHeight = Math.min(200, options.length * estimatedItemHeight);
+    const desiredHeight = Math.min(DROPDOWN_MAX_HEIGHT, options.length * ESTIMATED_ITEM_HEIGHT);
 
     if (spaceBelow >= desiredHeight) {
       setOpenUp(false);
-      setDropdownMaxHeight(Math.min(desiredHeight, Math.max(40, spaceBelow - 8)));
+      setDropdownMaxHeight(Math.min(desiredHeight, Math.max(DROPDOWN_MIN_HEIGHT, spaceBelow - DROPDOWN_VIEWPORT_MARGIN)));
       return;
     }
 
     if (spaceAbove >= desiredHeight) {
       setOpenUp(true);
-      setDropdownMaxHeight(Math.min(desiredHeight, Math.max(40, spaceAbove - 8)));
+      setDropdownMaxHeight(Math.min(desiredHeight, Math.max(DROPDOWN_MIN_HEIGHT, spaceAbove - DROPDOWN_VIEWPORT_MARGIN)));
       return;
     }
 
     // 两边都不足，选择可用空间更大的方向并尽量适配
     if (spaceBelow >= spaceAbove) {
       setOpenUp(false);
-      setDropdownMaxHeight(Math.max(40, spaceBelow - 8));
+      setDropdownMaxHeight(Math.max(DROPDOWN_MIN_HEIGHT, spaceBelow - DROPDOWN_VIEWPORT_MARGIN));
     } else {
       setOpenUp(true);
-      setDropdownMaxHeight(Math.max(40, spaceAbove - 8));
+      setDropdownMaxHeight(Math.max(DROPDOWN_MIN_HEIGHT, spaceAbove - DROPDOWN_VIEWPORT_MARGIN));
     }
   }, [options.length]);
 
