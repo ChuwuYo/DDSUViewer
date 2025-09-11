@@ -1,3 +1,11 @@
+@font-face {
+    font-family: 'OPlusSans30Light';
+    src: url('/OPlusSans30-Light.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
 html {
     background-color: #ffffff;
     text-align: center;
@@ -7,7 +15,7 @@ html {
 body {
     margin: 0;
     color: #333333;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    font-family: 'OPlusSans30Light', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
     "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
 }
