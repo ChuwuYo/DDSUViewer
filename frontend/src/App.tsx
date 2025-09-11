@@ -50,9 +50,6 @@ function App() {
               </Box>
             </Flex>
             <Spacer />
-            <Badge bg={mdColors.secondaryContainer} color={mdColors.onSecondaryContainer} px={3} py={1}>
-              在线监控
-            </Badge>
           </Flex>
         </Box>
       </Box>
