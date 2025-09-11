@@ -385,7 +385,7 @@ export const SerialConfigPanel = () => {
                 borderColor={!slaveID.trim() ? "red.300" : "gray.200"}
               />
               {!slaveID.trim() && (
-                <Text fontSize="xs" color="red.500" mt={1}>❗ 从站地址不能为空，请联系设备供应商获取</Text>
+                <Text fontSize="xs" color="red.500" mt={1}>❗ 从站地址不能为空，请查看电能表</Text>
               )}
             </Box>
 
