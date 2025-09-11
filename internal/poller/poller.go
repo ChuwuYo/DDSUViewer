@@ -289,11 +289,15 @@ func (p *Poller) copyElectricalData(src *registers.ElectricalData) *registers.El
 
 // readRegistersWithRetry 带重试的寄存器读取
 func (p *Poller) readRegistersWithRetry(startAddr uint16, quantity uint16) []byte {
-	maxRetries := 3
-	timeout := 500 * time.Millisecond
+	// 定义常量，提高可读性
+	const (
+		MaxRetries     = 3
+		BaseTimeout    = 500 * time.Millisecond
+		BaseRetryDelay = 100 * time.Millisecond
+	)
 
-	for retry := 0; retry < maxRetries; retry++ {
-		data, err := p.readRegisters(startAddr, quantity, timeout)
+	for retry := 0; retry < MaxRetries; retry++ {
+		data, err := p.readRegisters(startAddr, quantity, BaseTimeout)
 		if err == nil && data != nil {
 			// 验证数据长度
 			expectedLen := int(quantity) * 2
@@ -303,10 +307,10 @@ func (p *Poller) readRegistersWithRetry(startAddr uint16, quantity uint16) []byt
 			// 数据长度不符合，视为失败
 		}
 
-		// 记录重试信息（可选）
-		if retry < maxRetries-1 {
-			// 增加重试间隔，避免过快重试
-			time.Sleep(time.Duration(retry+1) * 100 * time.Millisecond)
+		// 指数退避重试间隔
+		if retry < MaxRetries-1 {
+			delay := BaseRetryDelay * time.Duration(1<<retry) // 100ms, 200ms, 400ms
+			time.Sleep(delay)
 		}
 	}
 
@@ -335,8 +339,9 @@ func (p *Poller) readRegisters(startAddr uint16, quantity uint16, timeout time.D
 		return nil, fmt.Errorf("发送失败: %v", err)
 	}
 
-	// 4. 等待设备处理
-	time.Sleep(200 * time.Millisecond)
+	// 4. 等待设备处理 (Modbus RTU 3.5字符间隔，约3.5ms@9600bps，但保守等待)
+	const DeviceProcessDelay = 200 * time.Millisecond
+	time.Sleep(DeviceProcessDelay)
 
 	// 5. 计算期望的响应长度
 	expectedLen := 3 + int(quantity)*2 + 2 // 从站ID(1) + 功能码(1) + 字节数(1) + 数据(quantity*2) + CRC(2)

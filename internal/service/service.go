@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
+	goserial "go.bug.st/serial"
+
 	"DDSUViewer/internal/poller"
 	"DDSUViewer/internal/serial"
-	goserial "go.bug.st/serial"
 )
 
 // Service 服务管理器
