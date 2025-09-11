@@ -30,6 +30,7 @@
 # -------------------------------
 # Node modules folder for the frontend project
 /frontend/node_modules/
+node_modules
 
 # Build artifacts from the frontend (Vite, etc.)
 /frontend/dist/
