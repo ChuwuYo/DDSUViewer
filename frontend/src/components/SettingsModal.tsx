@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Box, IconButton, Icon, Button } from '@chakra-ui/react';
 import { createIcon } from '@chakra-ui/react';
 import './SettingsModal.css';
+import { SaveSavedSerialConfig, LoadSavedSerialConfig, ClearSavedSerialConfig } from '../../wailsjs/go/main/App';
 
 /**
  * 使用内联 SVG 创建关闭图标（复用用户提供的路径）
@@ -101,16 +102,99 @@ export const SettingsModal: React.FC<{
     };
   }, [isOpen, onClose]);
 
-  // 初始化复选框状态（根据是否存在已保存的快照）
+  // 初始化复选框状态（根据是否存在已保存的快照），优先询问后端并回退到 localStorage
   useEffect(() => {
     if (!isOpen) return;
-    try {
-      const exists = Boolean(localStorage.getItem(SAVED_SERIAL_KEY));
-      setSaveSerialChecked(exists);
-    } catch {
-      // ignore storage errors
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const backend = await LoadSavedSerialConfig();
+        if (!cancelled && backend && backend !== '') {
+          setSaveSerialChecked(true);
+          return;
+        }
+      } catch {
+        // 后端可能不可用，回退到 localStorage
+      }
+      try {
+        const exists = Boolean(localStorage.getItem(SAVED_SERIAL_KEY));
+        if (!cancelled) setSaveSerialChecked(exists);
+      } catch {
+        // ignore storage errors
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
+
+  // 处理用户切换“保存当前的串口配置”开关：会调用后端 RPC，并同时维护 localStorage 作为回退
+  const handleSaveToggle = async (next: boolean) => {
+    setSaveSerialChecked(next);
+    try {
+      if (next) {
+        const currentRaw = localStorage.getItem(CURRENT_SERIAL_KEY) || '';
+        // 默认值，保证所有字段存在且类型稳健
+        let parsed: any = {
+          port: '',
+          baudRate: 9600,
+          dataBits: 8,
+          stopBits: 1,
+          parity: 'None',
+          slaveID: 0,
+        };
+        if (currentRaw) {
+          try {
+            const p = JSON.parse(currentRaw);
+            parsed = { ...parsed, ...p };
+          } catch {
+            // 解析失败则使用默认值
+          }
+        }
+        try {
+          // 按照 Wails 生成的绑定签名，传入 6 个参数
+          await SaveSavedSerialConfig(
+            parsed.port || '',
+            Number(parsed.baudRate || 9600),
+            Number(parsed.dataBits || 8),
+            Number(parsed.stopBits || 1),
+            parsed.parity || 'None',
+            Number(parsed.slaveID || 0)
+          );
+          // 后端成功或抛出前，我们都在 localStorage 中写入 JSON 字符串作为回退
+          localStorage.setItem(SAVED_SERIAL_KEY, JSON.stringify(parsed));
+        } catch (e) {
+          // 后端保存失败时仍使用 localStorage 作为回退
+          localStorage.setItem(SAVED_SERIAL_KEY, JSON.stringify(parsed));
+        }
+      } else {
+        // 取消保存：尝试清理后端并移除本地备份
+        try {
+          await ClearSavedSerialConfig();
+        } catch {
+          // ignore backend clear errors
+        }
+        localStorage.removeItem(SAVED_SERIAL_KEY);
+        try {
+          const defaultConfig = {
+            port: '',
+            baudRate: 9600,
+            dataBits: 8,
+            stopBits: 1,
+            parity: 'None',
+            slaveID: 0,
+          };
+          localStorage.setItem(CURRENT_SERIAL_KEY, JSON.stringify(defaultConfig));
+          // 通知应用立即应用回退的默认配置
+          window.dispatchEvent(new CustomEvent('ddsuv_serial_config_restored'));
+        } catch (e) {
+          console.warn('重置当前串口配置失败', e);
+        }
+      }
+    } catch (e) {
+      console.warn('切换保存串口配置失败', e);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -200,34 +284,7 @@ export const SettingsModal: React.FC<{
                 checked={saveSerialChecked}
                 onChange={(e) => {
                   const next = e.target.checked;
-                  setSaveSerialChecked(next);
-                  try {
-                    if (next) {
-                      const current = localStorage.getItem(CURRENT_SERIAL_KEY);
-                      if (current) localStorage.setItem(SAVED_SERIAL_KEY, current);
-                      else localStorage.setItem(SAVED_SERIAL_KEY, ''); // 标记为已启用但无内容
-                    } else {
-                      // 取消保存：移除已保存快照，并将“当前配置”回退为默认值（避免重启后仍加载旧快照）
-                      localStorage.removeItem(SAVED_SERIAL_KEY);
-                      try {
-                        const defaultConfig = {
-                          port: '',
-                          baudRate: 9600,
-                          dataBits: 8,
-                          stopBits: 1,
-                          parity: 'None'
-                          // 不写 slaveID 保证 UI 显示为空
-                        };
-                        localStorage.setItem(CURRENT_SERIAL_KEY, JSON.stringify(defaultConfig));
-                        // 通知应用立即应用回退的默认配置
-                        window.dispatchEvent(new CustomEvent('ddsuv_serial_config_restored'));
-                      } catch (e) {
-                        console.warn('重置当前串口配置失败', e);
-                      }
-                    }
-                  } catch (e) {
-                    console.warn('切换保存串口配置失败', e);
-                  }
+                  void handleSaveToggle(next);
                 }}
                 aria-label="保存当前的串口配置"
               />
@@ -240,8 +297,26 @@ export const SettingsModal: React.FC<{
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  const saved = localStorage.getItem(SAVED_SERIAL_KEY);
+                onClick={async () => {
+                  let saved = '';
+                  try {
+                    const backend = await LoadSavedSerialConfig();
+                    if (backend && backend !== '') {
+                      // 后端可能返回 JSON 字符串或对象，统一为 JSON 字符串
+                      if (typeof backend === 'string') {
+                        saved = backend;
+                      } else {
+                        try {
+                          saved = JSON.stringify(backend);
+                        } catch {
+                          // ignore stringify errors
+                        }
+                      }
+                    }
+                  } catch {
+                    // ignore backend errors
+                  }
+                  if (!saved) saved = localStorage.getItem(SAVED_SERIAL_KEY) || '';
                   if (!saved) {
                     window.alert('没有已保存的串口配置');
                     return;
