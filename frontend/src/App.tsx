@@ -1,7 +1,8 @@
-import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge, Image, Text } from '@chakra-ui/react';
+import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge, Image, Text, IconButton } from '@chakra-ui/react';
 import { ElectricalDataPanel } from './components/ElectricalDataPanel';
 import { SerialConfigPanel } from './components/SerialConfigPanel';
 import { StatusPanel } from './components/StatusPanel';
+import { SettingsIcon } from './components';
 import { mdColors } from './theme/colors';
 
 import './App.css';
@@ -50,6 +51,13 @@ function App() {
               </Box>
             </Flex>
             <Spacer />
+            <IconButton
+              aria-label="Settings"
+              children={<SettingsIcon />}
+              variant="ghost"
+              colorScheme="gray"
+              size="sm"
+            />
           </Flex>
         </Box>
       </Box>
