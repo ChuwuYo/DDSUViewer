@@ -25,6 +25,7 @@ func main() {
 		Title:  "DDSUViewer",
 		Width:  1024,
 		Height: 768,
+		MinWidth: 512,
 		AssetServer: &assetserver.Options{
 			Assets: embeddedAssets,
 		},
