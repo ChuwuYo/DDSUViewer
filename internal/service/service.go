@@ -1,8 +1,10 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -223,6 +225,88 @@ func (s *Service) StopPolling() error {
 // GetAvailablePorts 获取可用串口列表
 func (s *Service) GetAvailablePorts() ([]string, error) {
 	return serial.GetAvailablePorts()
+}
+
+// 保存持久化文件路径（相对于应用工作目录）
+const savedSerialConfigFile = "data/saved_serial_config.json"
+
+// SaveSavedSerialConfig 将快照写入磁盘（JSON）
+func (s *Service) SaveSavedSerialConfig(cfg *SerialConfig) error {
+	// 确保目录存在
+	if err := os.MkdirAll("data", 0o755); err != nil {
+		return err
+	}
+
+	// 使用基础类型序列化，避免直接序列化 goserial 类型可能带来的问题
+	persist := struct {
+		Port     string `json:"port"`
+		BaudRate int    `json:"baudRate"`
+		DataBits int    `json:"dataBits"`
+		StopBits int    `json:"stopBits"`
+		Parity   int    `json:"parity"`
+		SlaveID  int    `json:"slaveID"`
+	}{
+		Port:     cfg.Port,
+		BaudRate: cfg.BaudRate,
+		DataBits: cfg.DataBits,
+		StopBits: int(cfg.StopBits),
+		Parity:   int(cfg.Parity),
+		SlaveID:  cfg.SlaveID,
+	}
+
+	data, err := json.MarshalIndent(persist, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(savedSerialConfigFile, data, 0o644); err != nil {
+		return err
+	}
+	return nil
+}
+
+// LoadSavedSerialConfig 读取磁盘上的快照，文件不存在时返回 (nil, nil)
+func (s *Service) LoadSavedSerialConfig() (*SerialConfig, error) {
+	data, err := os.ReadFile(savedSerialConfigFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var persist struct {
+		Port     string `json:"port"`
+		BaudRate int    `json:"baudRate"`
+		DataBits int    `json:"dataBits"`
+		StopBits int    `json:"stopBits"`
+		Parity   int    `json:"parity"`
+		SlaveID  int    `json:"slaveID"`
+	}
+	if err := json.Unmarshal(data, &persist); err != nil {
+		return nil, err
+	}
+
+	cfg := &SerialConfig{
+		Port:     persist.Port,
+		BaudRate: persist.BaudRate,
+		DataBits: persist.DataBits,
+		StopBits: goserial.StopBits(persist.StopBits),
+		Parity:   goserial.Parity(persist.Parity),
+		SlaveID:  persist.SlaveID,
+	}
+	return cfg, nil
+}
+
+// ClearSavedSerialConfig 删除磁盘上的快照（如果存在）
+func (s *Service) ClearSavedSerialConfig() error {
+	if err := os.Remove(savedSerialConfigFile); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 // Subscribe 订阅数据更新

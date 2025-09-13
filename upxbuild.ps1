@@ -21,6 +21,17 @@ $wailsConfig | ConvertTo-Json -Depth 10 | Out-File -FilePath $wailsJsonPath -Enc
 
 Write-Host "已更新 wails.json 文件，版本号: $Version"
 
+# 读取frontend\package.json文件
+$packageJsonPath = "frontend\package.json"
+if (Test-Path $packageJsonPath) {
+    $packageConfig = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
+    $packageConfig.version = $Version
+    $packageConfig | ConvertTo-Json -Depth 10 | Out-File -FilePath $packageJsonPath -Encoding utf8
+    Write-Host "已更新 frontend\package.json 文件，版本号: $Version"
+} else {
+    Write-Warning "找不到 frontend\package.json 文件，跳过更新"
+}
+
 # 执行UPX压缩wails构建命令
 $buildCommand = "wails build -ldflags=`"-X main.Version=$Version`" -upx"
 Write-Host "执行UPX压缩构建命令: $buildCommand"
