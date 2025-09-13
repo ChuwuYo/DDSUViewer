@@ -26,6 +26,7 @@ func main() {
 		Width:  1024,
 		Height: 768,
 		MinWidth: 512,
+		MinHeight: 480,
 		AssetServer: &assetserver.Options{
 			Assets: embeddedAssets,
 		},
