@@ -207,7 +207,23 @@ export const SettingsModal: React.FC<{
                       if (current) localStorage.setItem(SAVED_SERIAL_KEY, current);
                       else localStorage.setItem(SAVED_SERIAL_KEY, ''); // 标记为已启用但无内容
                     } else {
+                      // 取消保存：移除已保存快照，并将“当前配置”回退为默认值（避免重启后仍加载旧快照）
                       localStorage.removeItem(SAVED_SERIAL_KEY);
+                      try {
+                        const defaultConfig = {
+                          port: '',
+                          baudRate: 9600,
+                          dataBits: 8,
+                          stopBits: 1,
+                          parity: 'None'
+                          // 不写 slaveID 保证 UI 显示为空
+                        };
+                        localStorage.setItem(CURRENT_SERIAL_KEY, JSON.stringify(defaultConfig));
+                        // 通知应用立即应用回退的默认配置
+                        window.dispatchEvent(new CustomEvent('ddsuv_serial_config_restored'));
+                      } catch (e) {
+                        console.warn('重置当前串口配置失败', e);
+                      }
                     }
                   } catch (e) {
                     console.warn('切换保存串口配置失败', e);
