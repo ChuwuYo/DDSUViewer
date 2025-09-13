@@ -413,16 +413,20 @@ export const SerialConfigPanel = () => {
         <Card.Header pb={2}>
           <HStack justify="space-between" align="center">
             <Text fontSize="lg" fontWeight="bold" color="gray.800">串口配置</Text>
-            <Button
-              size="sm"
-              colorScheme={isConnected ? 'red' : 'green'}
-              onClick={handleSerialToggle}
-            >
-              {isConnected ? '关闭串口' : '打开串口'}
-            </Button>
-            <Text fontSize="xs" color="gray.500">
-              状态: {isConnected ? '已连接' : '未连接'}
-            </Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <label className="switch" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={isConnected}
+                  onChange={() => {
+                    handleSerialToggle();
+                  }}
+                  aria-label="打开或关闭串口"
+                />
+                <span className="slider" />
+              </label>
+              <Text fontSize="xs" color="gray.500">串口: {isConnected ? '已打开' : '未打开'}</Text>
+            </div>
           </HStack>
         </Card.Header>
         <Card.Body pt={2}>

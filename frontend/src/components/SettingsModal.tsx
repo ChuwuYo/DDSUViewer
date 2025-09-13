@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Box, IconButton, Icon, Button } from '@chakra-ui/react';
 import { createIcon } from '@chakra-ui/react';
+import './SettingsModal.css';
 
 /**
  * 使用内联 SVG 创建关闭图标（复用用户提供的路径）
@@ -191,7 +192,9 @@ export const SettingsModal: React.FC<{
         </div>
         <div style={bodyStyle}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Switch styles moved to frontend/src/components/SettingsModal.css */}
+ 
+            <label className="switch" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="checkbox"
                 checked={saveSerialChecked}
@@ -211,11 +214,12 @@ export const SettingsModal: React.FC<{
                   }
                 }}
                 aria-label="保存当前的串口配置"
-                style={{ width: 16, height: 16 }}
               />
-              <span>保存当前的串口配置</span>
+              <span className="slider" />
             </label>
-
+ 
+            <span>保存当前的串口配置</span>
+ 
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
               <Button
                 size="sm"
@@ -241,7 +245,7 @@ export const SettingsModal: React.FC<{
               </Button>
             </div>
           </div>
-
+ 
           {children ?? null}
         </div>
       </div>
