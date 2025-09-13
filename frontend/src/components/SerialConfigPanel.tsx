@@ -245,7 +245,8 @@ export const SerialConfigPanel = () => {
     dataBits: 8,
     stopBits: 1,
     parity: 'None',
-    slaveID: 12,
+    // 默认不预填从站地址
+    slaveID: 0,
   });
   
   const { status } = useAppStore();
@@ -265,11 +266,20 @@ export const SerialConfigPanel = () => {
         setConfig(cfg => ({ ...cfg, ...parsed }));
         try {
           // 将快照持久化为当前配置键，保证下次启动也能读取到
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+          // 仅在快照包含有效端口或有效从站地址 (>0) 时写入，避免把空/默认 slaveID(0) 覆盖本地配置导致显示 "00"
+          const shouldPersist = (parsed.port && String(parsed.port).trim() !== '') || (parsed.slaveID !== undefined && Number(parsed.slaveID) > 0);
+          if (shouldPersist) {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+          } else {
+            // 如果快照中没有有意义的配置，确保当前配置键被清理
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+          }
         } catch {
           /* ignore */
         }
-        if (parsed.slaveID !== undefined && parsed.slaveID !== null) {
+        // 仅当从站地址为正整数（1-255）时才显示其十六进制表示；
+        // 如果为 0 或未设置，则保持输入为空，避免显示 "00"
+        if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
           const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
           setSlaveID(hex);
           setOriginalSlaveID(hex);
@@ -282,7 +292,8 @@ export const SerialConfigPanel = () => {
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<SerialConfig>;
         setConfig(cfg => ({ ...cfg, ...parsed }));
-        if (parsed.slaveID !== undefined && parsed.slaveID !== null) {
+        // 仅当从站地址为正整数（1-255）时才显示其十六进制表示；
+        if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
           const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
           setSlaveID(hex);
           setOriginalSlaveID(hex);
@@ -301,7 +312,8 @@ export const SerialConfigPanel = () => {
         if (!saved) return;
         const parsed = JSON.parse(saved) as Partial<SerialConfig>;
         setConfig(cfg => ({ ...cfg, ...parsed }));
-        if (parsed.slaveID !== undefined && parsed.slaveID !== null) {
+        // 恢复时仅在 slaveID>0 时显示十六进制表示，0 表示“未设置”
+        if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
           const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
           setSlaveID(hex);
           setOriginalSlaveID(hex);

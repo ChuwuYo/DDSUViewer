@@ -1,12 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Box, IconButton, Icon, Button } from '@chakra-ui/react';
+import {
+  Box,
+  IconButton,
+  Icon,
+  Button,
+} from '@chakra-ui/react';
 import { createIcon } from '@chakra-ui/react';
 import './SettingsModal.css';
 import { SaveSavedSerialConfig, LoadSavedSerialConfig, ClearSavedSerialConfig } from '../../wailsjs/go/main/App';
 
 /**
- * 使用内联 SVG 创建关闭图标（复用用户提供的路径）
+ * 使用内联 SVG 创建关闭图标
  */
 export const CloseXIcon = createIcon({
   displayName: 'CloseXIcon',
@@ -44,6 +49,15 @@ export const SettingsModal: React.FC<{
   const CURRENT_SERIAL_KEY = 'ddsuv_serial_config_v1';
   const SAVED_SERIAL_KEY = 'ddsuv_serial_config_saved_v1';
   const [saveSerialChecked, setSaveSerialChecked] = useState<boolean>(false);
+  // 内置简单 toast 实现，兼容项目中自定义浮层风格
+  const [toastState, setToastState] = useState<{ title?: string; description?: string; status?: 'success' | 'error' | 'warning' } | null>(null);
+  const showToast = (title?: string, description?: string, status: 'success' | 'error' | 'warning' = 'success') => {
+    setToastState({ title, description, status });
+    window.setTimeout(() => setToastState(null), 4000);
+  };
+  const [restorePending, setRestorePending] = useState<string>('');
+  const [isRestoreOpen, setIsRestoreOpen] = useState<boolean>(false);
+  const restoreCancelRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -152,6 +166,16 @@ export const SettingsModal: React.FC<{
           }
         }
         try {
+          // 校验当前配置是否有效：避免在没有实际配置时保存“空白/默认(0)”从站地址
+          const hasPort = Boolean(parsed.port && String(parsed.port).trim() !== '');
+          const hasSlave = Number(parsed.slaveID) > 0;
+          if (!hasPort && !hasSlave) {
+            // 恢复复选框状态并提示用户先设置串口/从站地址
+            setSaveSerialChecked(false);
+            showToast('无法保存配置', '当前没有可保存的串口配置。请先在串口面板中选择端口并设置从站地址，然后再启用保存。', 'warning');
+            return;
+          }
+
           // 按照 Wails 生成的绑定签名，传入 6 个参数
           await SaveSavedSerialConfig(
             parsed.port || '',
@@ -174,28 +198,52 @@ export const SettingsModal: React.FC<{
         } catch {
           // ignore backend clear errors
         }
+        // 移除已保存的快照（用于下一次启动时不再加载）
         localStorage.removeItem(SAVED_SERIAL_KEY);
+        // 为确保：1) 关闭“保存”后，当前运行时配置不应立即改变；
+        // 2) 但在下一次重启时不再加载之前的持久化配置，
+        // 我们在此仅清理本地的持久化 CURRENT_SERIAL_KEY，而不修改内存中的当前配置或触发恢复广播。
         try {
-          const defaultConfig = {
-            port: '',
-            baudRate: 9600,
-            dataBits: 8,
-            stopBits: 1,
-            parity: 'None',
-            slaveID: 0,
-          };
-          localStorage.setItem(CURRENT_SERIAL_KEY, JSON.stringify(defaultConfig));
-          // 通知应用立即应用回退的默认配置
-          window.dispatchEvent(new CustomEvent('ddsuv_serial_config_restored'));
-        } catch (e) {
-          console.warn('重置当前串口配置失败', e);
+          localStorage.removeItem(CURRENT_SERIAL_KEY);
+        } catch {
+          /* ignore */
         }
       }
     } catch (e) {
       console.warn('切换保存串口配置失败', e);
     }
   };
-
+  
+  const handleConfirmRestore = async () => {
+    const saved = restorePending;
+    setIsRestoreOpen(false);
+    setRestorePending('');
+    try {
+      // 解析已保存内容，兼容后端返回对象或字符串
+      let parsed: any = null;
+      try {
+        parsed = typeof saved === 'string' ? JSON.parse(saved) : saved;
+      } catch {
+        parsed = null;
+      }
+      // 校验：仅当包含有效端口或有效从站地址 (>0) 时才写入 CURRENT_SERIAL_KEY
+      const hasPort = parsed && parsed.port && String(parsed.port).trim() !== '';
+      const hasSlave = parsed && parsed.slaveID !== undefined && Number(parsed.slaveID) > 0;
+      if (!hasPort && !hasSlave) {
+        showToast('恢复取消', '已保存的配置不包含有效端口或从站地址，恢复已取消。', 'warning');
+        try { localStorage.removeItem(CURRENT_SERIAL_KEY); } catch { /* ignore */ }
+        return;
+      }
+      // 写入并广播（统一以 JSON 字符串保存 CURRENT_SERIAL_KEY）
+      localStorage.setItem(CURRENT_SERIAL_KEY, JSON.stringify(parsed));
+      window.dispatchEvent(new CustomEvent('ddsuv_serial_config_restored'));
+      showToast('已恢复', '已恢复保存的串口配置', 'success');
+    } catch (e) {
+      console.warn('恢复串口配置失败', e);
+      showToast('错误', '恢复串口配置失败', 'error');
+    }
+  };
+  
   if (!isOpen) return null;
 
   const overlayStyle: React.CSSProperties = {
@@ -254,6 +302,15 @@ export const SettingsModal: React.FC<{
       }}
       aria-hidden={!isOpen}
     >
+      {/* 内置 toast 浮层（简化版） */}
+      {toastState && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 1600 }}>
+          <div style={{ background: toastState.status === 'success' ? '#38a169' : toastState.status === 'error' ? '#c53030' : '#dd6b20', color: 'white', padding: '12px 16px', borderRadius: 6, boxShadow: '0 4px 6px rgba(0,0,0,0.1)', maxWidth: 360 }}>
+            {toastState.title && <div style={{ fontWeight: 600 }}>{toastState.title}</div>}
+            {toastState.description && <div style={{ marginTop: 6, fontSize: 13 }}>{toastState.description}</div>}
+          </div>
+        </div>
+      )}
       <div
         ref={contentRef}
         role="dialog"
@@ -318,18 +375,12 @@ export const SettingsModal: React.FC<{
                   }
                   if (!saved) saved = localStorage.getItem(SAVED_SERIAL_KEY) || '';
                   if (!saved) {
-                    window.alert('没有已保存的串口配置');
+                    showToast('未找到保存的配置', '没有已保存的串口配置', 'warning');
                     return;
                   }
-                  if (!confirm('将用已保存的配置覆盖当前串口配置？')) return;
-                  try {
-                    localStorage.setItem(CURRENT_SERIAL_KEY, saved);
-                    // 广播恢复事件，SerialConfigPanel 可监听该事件以立即应用
-                    window.dispatchEvent(new CustomEvent('ddsuv_serial_config_restored'));
-                    window.alert('已恢复保存的串口配置');
-                  } catch (e) {
-                    console.warn('恢复串口配置失败', e);
-                  }
+                  // 打开确认对话框，由用户确认后再执行恢复
+                  setRestorePending(saved);
+                  setIsRestoreOpen(true);
                 }}
               >
                 恢复
@@ -338,6 +389,18 @@ export const SettingsModal: React.FC<{
           </div>
  
           {children ?? null}
+          {isRestoreOpen && (
+            <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500 }}>
+              <div style={{ background: 'white', padding: 20, borderRadius: 8, width: 'min(480px, 90%)', boxShadow: '0 8px 24px rgba(0,0,0,0.16)' }}>
+                <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: 8 }}>确认恢复</div>
+                <div style={{ marginBottom: 16 }}>将用已保存的配置覆盖当前串口配置？</div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <Button ref={restoreCancelRef} onClick={() => setIsRestoreOpen(false)}>取消</Button>
+                  <Button colorScheme="blue" onClick={handleConfirmRestore}>确认</Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>,
