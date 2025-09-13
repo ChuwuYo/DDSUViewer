@@ -399,6 +399,7 @@ export const SerialConfigPanel = () => {
               <CustomSelect
                 value={config.baudRate.toString()}
                 options={[
+                  { label: '2400', value: '2400' },
                   { label: '4800', value: '4800' },
                   { label: '9600', value: '9600' },
                   { label: '19200', value: '19200' },
