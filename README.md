@@ -18,6 +18,7 @@ DDSUViewer 是一个专为 DDSU666 单相电子式电能表设计的上位机软
 - 可配置串口参数和从站地址
 - 现代化界面设计
 - 数据轮询和状态监控
+- 保存串口配置
 
 ## 技术栈
 
@@ -123,34 +124,38 @@ UPX压缩构建会进一步减小可执行文件大小，但需要系统上已�
 | 频率 | 0x200E | Hz | 电网频率 |
 | 有功总电能 | 0x4000 | kWh | 累计电能 |
 
-## 项目结构
+## 项目结构（概览）
+下面列出项目的主要目录与文件，并附带简要说明，便于快速定位开发或打包所需的代码与脚本。
 
 ```
 DDSUViewer/
-├── docs/                  # 文档目录
-│   ├── steering/          # 技术指导文档
-│   └── *.pdf              # 设备说明书
-├── frontend/              # 前端代码
+├── docs/                     # 文档目录（设计/部署/设备手册等）
+│   └── steering/             # 开发与运维技术指导文档
+├── frontend/                 # 前端代码（React + TypeScript）
 │   ├── src/
-│   │   ├── components/    # React 组件
-│   │   ├── hooks/         # 自定义 Hooks
-│   │   ├── store/         # 状态管理
-│   │   └── theme/         # 主题配置
-│   └── wailsjs/           # Wails 生成的绑定文件
-├── internal/              # 后端内部包
-│   ├── modbus/            # Modbus 协议实现
-│   ├── serial/            # 串口通信
-│   ├── registers/         # 寄存器定义和解析
-│   ├── poller/            # 数据轮询器
-│   ├── service/           # 业务服务层
-│   ├── parser/            # 数据解析器
-│   └── protocol_detector/ # 协议检测器
-├── app.go                 # Wails 应用入口
-├── main.go                # 程序主入口
-├── wails.json             # Wails 配置文件
-├── build.ps1              # PowerShell 标准构建脚本
-├── upxbuild.ps1           # PowerShell UPX压缩构建脚本
-└── go.mod                 # Go 模块定义
+│   │   ├── components/       # 可复用的 React 组件（UI 控件、面板）
+│   │   ├── hooks/            # 自定义 Hook（复用逻辑，如 toast service）
+│   │   ├── store/            # 应用级状态管理（若使用）
+│   │   ├── theme/            # 主题、样式变量和全局 CSS
+│   │   └── index.tsx         # 前端入口
+│   ├── public/               # 静态资源（图标、图片）
+│   ├── package.json          # 前端依赖与脚本（npm run dev / build）
+│   └── wailsjs/              # Wails 自动生成的前端 - 后端绑定文件
+├── internal/                 # 后端内部包（业务实现）
+│   ├── modbus/               # Modbus 协议实现与帧解析
+│   ├── serial/               # 串口打开/读写封装（go.bug.st/serial）
+│   ├── registers/            # 寄存器定义与寄存器映射表
+│   ├── poller/               # 轮询器，定时读取设备数据
+│   ├── service/              # 业务服务层（暴露给前端的 RPC）
+│   ├── parser/               # 原始数据解析逻辑
+│   └── protocol_detector/    # 协议检测或格式识别工具
+├── cmd/ (可选)               # 若存在，放置可执行程序的子命令入口
+├── app.go                    # Wails 应用初始化（绑定 RPC、窗口配置）
+├── main.go                   # 程序主入口（启动流程）
+├── wails.json                # Wails 构建与打包配置
+├── build.ps1                 # Windows 下的构建脚本（统一版本号与打包）
+├── upxbuild.ps1              # 支持 UPX 的压缩构建脚本
+└── go.mod                    # Go 模块声明及依赖
 ```
 
 ## 开发文档

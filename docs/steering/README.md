@@ -142,35 +142,6 @@ DDSU666 设备 ←→ RS485 ←→ 串口通信层 ←→ Modbus协议层 ←→
 - **重试**: 最多 3次, 间隔 50ms
 - **超时**: 200ms 读取超时
 
-### 📁 项目结构
-```
-DDSUViewer/
-├── docs/                  # 文档目录
-│   ├── steering/          # 技术指导文档
-│   └── *.pdf              # 设备说明书
-├── frontend/              # 前端代码
-│   ├── src/
-│   │   ├── components/    # React 组件
-│   │   ├── hooks/         # 自定义 Hooks
-│   │   ├── store/         # 状态管理
-│   │   └── theme/         # 主题配置
-│   └── wailsjs/           # Wails 生成的绑定文件
-├── internal/              # 后端内部包
-│   ├── modbus/            # Modbus 协议实现
-│   ├── serial/            # 串口通信
-│   ├── registers/         # 寄存器定义和解析
-│   ├── poller/            # 数据轮询器
-│   ├── service/           # 业务服务层
-│   ├── parser/            # 数据解析器
-│   └── protocol_detector/ # 协议检测器
-├── app.go                 # Wails 应用入口
-├── main.go                # 程序主入口
-├── wails.json             # Wails 配置文件
-├── build.ps1              # PowerShell 标准构建脚本
-├── upxbuild.ps1           # PowerShell UPX压缩构建脚本
-└── go.mod                 # Go 模块定义
-```
-
 ## 文档维护
 
 ### 📝 更新原则
