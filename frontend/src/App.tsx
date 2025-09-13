@@ -1,13 +1,15 @@
+import React, { useState } from 'react';
 import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge, Image, Text, IconButton } from '@chakra-ui/react';
 import { ElectricalDataPanel } from './components/ElectricalDataPanel';
 import { SerialConfigPanel } from './components/SerialConfigPanel';
 import { StatusPanel } from './components/StatusPanel';
-import { SettingsIcon } from './components';
+import { SettingsIcon, SettingsModal } from './components';
 import { mdColors } from './theme/colors';
 
 import './App.css';
 
 function App() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <Box minH="100vh" bg={mdColors.background}>
       {/* 顶部标题栏 */}
@@ -57,6 +59,7 @@ function App() {
               variant="ghost"
               colorScheme="gray"
               size="sm"
+              onClick={() => setSettingsOpen(true)}
             />
           </Flex>
         </Box>
@@ -83,6 +86,9 @@ function App() {
           </GridItem>
         </Grid>
       </Box>
+
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
     </Box>
   );
 }

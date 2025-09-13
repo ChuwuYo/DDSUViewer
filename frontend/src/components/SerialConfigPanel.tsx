@@ -233,6 +233,8 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
 };
 
 export const SerialConfigPanel = () => {
+  const LOCAL_STORAGE_KEY = 'ddsuv_serial_config_v1';
+  const SAVED_SERIAL_KEY = 'ddsuv_serial_config_saved_v1';
   const [slaveID, setSlaveID] = useState('');
   const [originalSlaveID, setOriginalSlaveID] = useState('');
   const [ports, setPorts] = useState<string[]>([]);
@@ -248,9 +250,68 @@ export const SerialConfigPanel = () => {
   
   const { status } = useAppStore();
   const isConnected = status.connected;
-
+ 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
     setToast({ message, type });
+  }, []);
+
+  // 从 localStorage 加载持久化的串口配置（优先使用已保存的快照）
+  useEffect(() => {
+    try {
+      const savedRaw = localStorage.getItem(SAVED_SERIAL_KEY);
+      if (savedRaw && savedRaw !== '') {
+        // 存在已保存的快照，优先使用它作为当前配置（用户已选择“保存当前的串口配置”）
+        const parsed = JSON.parse(savedRaw) as Partial<SerialConfig>;
+        setConfig(cfg => ({ ...cfg, ...parsed }));
+        try {
+          // 将快照持久化为当前配置键，保证下次启动也能读取到
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+        } catch {
+          /* ignore */
+        }
+        if (parsed.slaveID !== undefined && parsed.slaveID !== null) {
+          const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
+          setSlaveID(hex);
+          setOriginalSlaveID(hex);
+        }
+        return;
+      }
+
+      // 否则回退到常规模式的当前配置键
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<SerialConfig>;
+        setConfig(cfg => ({ ...cfg, ...parsed }));
+        if (parsed.slaveID !== undefined && parsed.slaveID !== null) {
+          const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
+          setSlaveID(hex);
+          setOriginalSlaveID(hex);
+        }
+      }
+    } catch (e) {
+      console.warn('读取持久化串口配置失败', e);
+    }
+  }, []);
+
+  // 监听 SettingsModal 的恢复事件，立即应用已保存/当前配置
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem(SAVED_SERIAL_KEY) || localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved) as Partial<SerialConfig>;
+        setConfig(cfg => ({ ...cfg, ...parsed }));
+        if (parsed.slaveID !== undefined && parsed.slaveID !== null) {
+          const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
+          setSlaveID(hex);
+          setOriginalSlaveID(hex);
+        }
+      } catch (e) {
+        console.warn('恢复串口配置失败', e);
+      }
+    };
+    window.addEventListener('ddsuv_serial_config_restored', handler as EventListener);
+    return () => window.removeEventListener('ddsuv_serial_config_restored', handler as EventListener);
   }, []);
 
   useEffect(() => {
@@ -265,9 +326,19 @@ export const SerialConfigPanel = () => {
     loadPorts();
   }, []);
 
+  const persistConfig = (c: SerialConfig) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(c));
+    } catch (e) {
+      console.warn('保存串口配置到 localStorage 失败', e);
+    }
+  };
+ 
   const handleConfigUpdate = async (field: string, value: any) => {
     const newConfig = { ...config, [field]: value };
     setConfig(newConfig);
+    // 立即持久化本地副本，保证刷新后仍能恢复用户设置
+    persistConfig(newConfig);
     
     try {
       const result = await UpdateSerialConfig(
