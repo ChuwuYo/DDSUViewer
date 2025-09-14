@@ -73,8 +73,8 @@ wails build -ldflags="-s -w" -upx
 
 项目根目录提供了两个 PowerShell 构建脚本：
 
-1. [build.ps1](file:///E:/1Chuwu/Goprojects/DDSUViewer/build.ps1) - 标准构建脚本
-2. [upxbuild.ps1](file:///E:/1Chuwu/Goprojects/DDSUViewer/upxbuild.ps1) - UPX压缩构建脚本
+1. [build.ps1](build.ps1) - 标准构建脚本
+2. [upxbuild.ps1](upxbuild.ps1) - UPX压缩构建脚本
 
 使用方法：
 
@@ -87,8 +87,8 @@ wails build -ldflags="-s -w" -upx
 ```
 
 两个脚本都会自动：
-1. 更新 [wails.json](file:///E:/1Chuwu/Goprojects/DDSUViewer/wails.json) 中的 productVersion
-2. 更新 [frontend/package.json](file:///E:/1Chuwu/Goprojects/DDSUViewer/frontend/package.json) 中的 version
+1. 更新 [wails.json](wails.json) 中的 productVersion
+2. 更新 [frontend/package.json](frontend/package.json) 中的 version
 3. 执行 Wails 构建命令
 4. 将版本号传递给应用程序
 
