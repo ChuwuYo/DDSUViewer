@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 
 	"DDSUViewer/internal/service"
@@ -86,17 +87,14 @@ func (a *App) StopPolling() bool {
 	return true
 }
 
-// UpdateSerialConfig 更新串口配置 (Wails方法)
-func (a *App) UpdateSerialConfig(port string, baudRate int, dataBits int, stopBits int, parity string, slaveID int) bool {
-	// 转换停止位
+// 辅助：将前端 stopBits/parity 转换为 goserial 类型
+func parseStopBitsParity(stopBits int, parity string) (goserial.StopBits, goserial.Parity) {
 	var sb goserial.StopBits
 	if stopBits == 2 {
 		sb = goserial.TwoStopBits
 	} else {
 		sb = goserial.OneStopBit
 	}
-	
-	// 转换校验位
 	var p goserial.Parity
 	switch parity {
 	case "Even":
@@ -106,7 +104,13 @@ func (a *App) UpdateSerialConfig(port string, baudRate int, dataBits int, stopBi
 	default:
 		p = goserial.NoParity
 	}
-	
+	return sb, p
+}
+
+// UpdateSerialConfig 更新串口配置 (Wails方法)
+func (a *App) UpdateSerialConfig(port string, baudRate int, dataBits int, stopBits int, parity string, slaveID int) bool {
+	sb, p := parseStopBitsParity(stopBits, parity)
+
 	config := &service.SerialConfig{
 		Port:     port,
 		BaudRate: baudRate,
@@ -115,10 +119,68 @@ func (a *App) UpdateSerialConfig(port string, baudRate int, dataBits int, stopBi
 		Parity:   p,
 		SlaveID:  slaveID,
 	}
-	
+
 	err := a.service.UpdateSerialConfig(config)
 	if err != nil {
 		log.Printf("更新串口配置失败: %v", err)
+		return false
+	}
+	return true
+}
+
+// SaveSavedSerialConfig 将当前配置以快照形式持久化到后端（Wails方法）
+func (a *App) SaveSavedSerialConfig(port string, baudRate int, dataBits int, stopBits int, parity string, slaveID int) bool {
+	sb, p := parseStopBitsParity(stopBits, parity)
+
+	cfg := &service.SerialConfig{
+		Port:     port,
+		BaudRate: baudRate,
+		DataBits: dataBits,
+		StopBits: sb,
+		Parity:   p,
+		SlaveID:  slaveID,
+	}
+
+	if err := a.service.SaveSavedSerialConfig(cfg); err != nil {
+		log.Printf("保存串口快照失败: %v", err)
+		return false
+	}
+	return true
+}
+
+// LoadSavedSerialConfig 从后端加载已保存的快照并以 JSON 字符串返回（Wails方法）
+func (a *App) LoadSavedSerialConfig() string {
+	cfg, err := a.service.LoadSavedSerialConfig()
+	if err != nil {
+		log.Printf("加载串口快照失败: %v", err)
+		return ""
+	}
+	if cfg == nil {
+		// 未保存
+		return ""
+	}
+
+	// 将配置序列化为简单 JSON，以便前端直接使用
+	out := map[string]interface{}{
+		"port":     cfg.Port,
+		"baudRate": cfg.BaudRate,
+		"dataBits": cfg.DataBits,
+		"stopBits": int(cfg.StopBits),
+		"parity":   int(cfg.Parity),
+		"slaveID":  cfg.SlaveID,
+	}
+	b, err := json.Marshal(out)
+	if err != nil {
+		log.Printf("序列化快照失败: %v", err)
+		return ""
+	}
+	return string(b)
+}
+
+// ClearSavedSerialConfig 从后端移除持久化快照（Wails方法）
+func (a *App) ClearSavedSerialConfig() bool {
+	if err := a.service.ClearSavedSerialConfig(); err != nil {
+		log.Printf("清除串口快照失败: %v", err)
 		return false
 	}
 	return true

@@ -22,6 +22,7 @@
 # Ignore the entire build directory, not just the 'bin' subfolder.
 # This is safer and more comprehensive.
 /build/bin/
+/build/windows/installer/
 
 # Go dependencies - typically managed by go.mod, not needed here unless vendoring
 # -------------------------------

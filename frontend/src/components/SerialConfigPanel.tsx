@@ -233,6 +233,8 @@ const CustomSelect = ({ value, options, onChange, placeholder }: CustomSelectPro
 };
 
 export const SerialConfigPanel = () => {
+  const LOCAL_STORAGE_KEY = 'ddsuv_serial_config_v1';
+  const SAVED_SERIAL_KEY = 'ddsuv_serial_config_saved_v1';
   const [slaveID, setSlaveID] = useState('');
   const [originalSlaveID, setOriginalSlaveID] = useState('');
   const [ports, setPorts] = useState<string[]>([]);
@@ -243,14 +245,76 @@ export const SerialConfigPanel = () => {
     dataBits: 8,
     stopBits: 1,
     parity: 'None',
-    slaveID: 12,
+    // 默认不预填从站地址
+    slaveID: 0,
   });
   
   const { status } = useAppStore();
   const isConnected = status.connected;
-
+ 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
     setToast({ message, type });
+  }, []);
+
+  // 辅助：将解析后的部分配置应用到组件状态（包含从站地址的十六进制展示）
+  const applyParsedToState = (parsed: Partial<SerialConfig>) => {
+    setConfig(cfg => ({ ...cfg, ...parsed }));
+    if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
+      const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
+      setSlaveID(hex);
+      setOriginalSlaveID(hex);
+    }
+  };
+
+  // 从 localStorage 加载持久化的串口配置（优先使用已保存的快照）
+  useEffect(() => {
+    try {
+      const savedRaw = localStorage.getItem(SAVED_SERIAL_KEY);
+      if (savedRaw && savedRaw !== '') {
+        // 存在已保存的快照，优先使用它作为当前配置（用户已选择“保存当前的串口配置”）
+        const parsed = JSON.parse(savedRaw) as Partial<SerialConfig>;
+        applyParsedToState(parsed);
+        try {
+          // 将快照持久化为当前配置键，保证下次启动也能读取到
+          // 仅在快照包含有效端口或有效从站地址 (>0) 时写入，避免把空/默认 slaveID(0) 覆盖本地配置导致显示 "00"
+          const shouldPersist = (parsed.port && String(parsed.port).trim() !== '') || (parsed.slaveID !== undefined && Number(parsed.slaveID) > 0);
+          if (shouldPersist) {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+          } else {
+            // 如果快照中没有有意义的配置，确保当前配置键被清理
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+          }
+        } catch (e) {
+          console.warn('SerialConfigPanel: 无法持久化快照到 localStorage', e);
+        }
+        return;
+      }
+
+      // 否则回退到常规模式的当前配置键
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<SerialConfig>;
+        applyParsedToState(parsed);
+      }
+    } catch (e) {
+      console.warn('读取持久化串口配置失败', e);
+    }
+  }, []);
+
+  // 监听 SettingsModal 的恢复事件，立即应用已保存/当前配置
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem(SAVED_SERIAL_KEY) || localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved) as Partial<SerialConfig>;
+        applyParsedToState(parsed);
+      } catch (e) {
+        console.warn('恢复串口配置失败', e);
+      }
+    };
+    window.addEventListener('ddsuv_serial_config_restored', handler as EventListener);
+    return () => window.removeEventListener('ddsuv_serial_config_restored', handler as EventListener);
   }, []);
 
   useEffect(() => {
@@ -265,9 +329,19 @@ export const SerialConfigPanel = () => {
     loadPorts();
   }, []);
 
+  const persistConfig = (c: SerialConfig) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(c));
+    } catch (e) {
+      console.warn('保存串口配置到 localStorage 失败', e);
+    }
+  };
+ 
   const handleConfigUpdate = async (field: string, value: any) => {
     const newConfig = { ...config, [field]: value };
     setConfig(newConfig);
+    // 立即持久化本地副本，保证刷新后仍能恢复用户设置
+    persistConfig(newConfig);
     
     try {
       const result = await UpdateSerialConfig(
@@ -342,16 +416,20 @@ export const SerialConfigPanel = () => {
         <Card.Header pb={2}>
           <HStack justify="space-between" align="center">
             <Text fontSize="lg" fontWeight="bold" color="gray.800">串口配置</Text>
-            <Button
-              size="sm"
-              colorScheme={isConnected ? 'red' : 'green'}
-              onClick={handleSerialToggle}
-            >
-              {isConnected ? '关闭串口' : '打开串口'}
-            </Button>
-            <Text fontSize="xs" color="gray.500">
-              状态: {isConnected ? '已连接' : '未连接'}
-            </Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <label className="switch" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={isConnected}
+                  onChange={() => {
+                    handleSerialToggle();
+                  }}
+                  aria-label="打开或关闭串口"
+                />
+                <span className="slider" />
+              </label>
+              <Text fontSize="xs" color="gray.500">串口: {isConnected ? '已打开' : '未打开'}</Text>
+            </div>
           </HStack>
         </Card.Header>
         <Card.Body pt={2}>
@@ -399,6 +477,7 @@ export const SerialConfigPanel = () => {
               <CustomSelect
                 value={config.baudRate.toString()}
                 options={[
+                  { label: '2400', value: '2400' },
                   { label: '4800', value: '4800' },
                   { label: '9600', value: '9600' },
                   { label: '19200', value: '19200' },
