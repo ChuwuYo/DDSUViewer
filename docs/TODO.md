@@ -22,10 +22,10 @@
      2. 取消勾选时：删除备份键（移除独立“清除”按钮，简化 UX）；  
      3. 重启生效：`SerialConfigPanel` 启动时优先读取备份键（存在且非空时），并按“有效 `port` 或 `slaveID>0`”约束写回当前配置键；  
      4. 即时恢复：提供“恢复”按钮，将备份写回当前配置，并通过 `CustomEvent('ddsuv_serial_config_restored')` 广播以即时应用；  
-   - 技术细节：  
-     1. 使用原生 `input[type="checkbox"]`，规避项目中 Chakra Checkbox 的 TS JSX 类型问题；  
-     2. `SerialConfigPanel` 监听恢复事件以支持即时应用；  
-     3. 预留扩展：可后续通过 Wails 后端接口实现服务端持久化。
+   - 技术细节：
+     1. 使用原生 `input[type="checkbox"]`，规避项目中 Chakra Checkbox 的 TS JSX 类型问题；
+     2. `SerialConfigPanel` 监听恢复事件以支持即时应用；
+     3. 已实现后端持久化：通过 Wails RPC（SaveSavedSerialConfig / LoadSavedSerialConfig / ClearSavedSerialConfig），持久化文件位于 data/saved_serial_config.json。
 
 
 ## 二、任务状态与后续事项（开发者自动同步）
