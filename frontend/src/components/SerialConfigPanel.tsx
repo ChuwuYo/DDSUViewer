@@ -284,8 +284,8 @@ export const SerialConfigPanel = () => {
             // 如果快照中没有有意义的配置，确保当前配置键被清理
             localStorage.removeItem(LOCAL_STORAGE_KEY);
           }
-        } catch {
-          /* ignore */
+        } catch (e) {
+          console.warn('SerialConfigPanel: 无法持久化快照到 localStorage', e);
         }
         return;
       }

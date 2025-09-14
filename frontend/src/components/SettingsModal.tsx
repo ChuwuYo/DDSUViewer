@@ -109,8 +109,8 @@ export const SettingsModal: React.FC<{
       document.removeEventListener('keydown', onKeyDown);
       try {
         previouslyFocusedRef.current?.focus();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.warn('SettingsModal: 无法恢复之前聚焦元素', e);
       }
       setAnimateIn(false);
     };
