@@ -256,6 +256,16 @@ export const SerialConfigPanel = () => {
     setToast({ message, type });
   }, []);
 
+  // 辅助：将解析后的部分配置应用到组件状态（包含从站地址的十六进制展示）
+  const applyParsedToState = (parsed: Partial<SerialConfig>) => {
+    setConfig(cfg => ({ ...cfg, ...parsed }));
+    if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
+      const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
+      setSlaveID(hex);
+      setOriginalSlaveID(hex);
+    }
+  };
+
   // 从 localStorage 加载持久化的串口配置（优先使用已保存的快照）
   useEffect(() => {
     try {
@@ -263,7 +273,7 @@ export const SerialConfigPanel = () => {
       if (savedRaw && savedRaw !== '') {
         // 存在已保存的快照，优先使用它作为当前配置（用户已选择“保存当前的串口配置”）
         const parsed = JSON.parse(savedRaw) as Partial<SerialConfig>;
-        setConfig(cfg => ({ ...cfg, ...parsed }));
+        applyParsedToState(parsed);
         try {
           // 将快照持久化为当前配置键，保证下次启动也能读取到
           // 仅在快照包含有效端口或有效从站地址 (>0) 时写入，避免把空/默认 slaveID(0) 覆盖本地配置导致显示 "00"
@@ -277,13 +287,6 @@ export const SerialConfigPanel = () => {
         } catch {
           /* ignore */
         }
-        // 仅当从站地址为正整数（1-255）时才显示其十六进制表示；
-        // 如果为 0 或未设置，则保持输入为空，避免显示 "00"
-        if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
-          const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
-          setSlaveID(hex);
-          setOriginalSlaveID(hex);
-        }
         return;
       }
 
@@ -291,13 +294,7 @@ export const SerialConfigPanel = () => {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<SerialConfig>;
-        setConfig(cfg => ({ ...cfg, ...parsed }));
-        // 仅当从站地址为正整数（1-255）时才显示其十六进制表示；
-        if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
-          const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
-          setSlaveID(hex);
-          setOriginalSlaveID(hex);
-        }
+        applyParsedToState(parsed);
       }
     } catch (e) {
       console.warn('读取持久化串口配置失败', e);
@@ -311,13 +308,7 @@ export const SerialConfigPanel = () => {
         const saved = localStorage.getItem(SAVED_SERIAL_KEY) || localStorage.getItem(LOCAL_STORAGE_KEY);
         if (!saved) return;
         const parsed = JSON.parse(saved) as Partial<SerialConfig>;
-        setConfig(cfg => ({ ...cfg, ...parsed }));
-        // 恢复时仅在 slaveID>0 时显示十六进制表示，0 表示“未设置”
-        if (parsed.slaveID !== undefined && parsed.slaveID !== null && Number(parsed.slaveID) > 0) {
-          const hex = Number(parsed.slaveID).toString(16).toUpperCase().padStart(2, '0');
-          setSlaveID(hex);
-          setOriginalSlaveID(hex);
-        }
+        applyParsedToState(parsed);
       } catch (e) {
         console.warn('恢复串口配置失败', e);
       }
