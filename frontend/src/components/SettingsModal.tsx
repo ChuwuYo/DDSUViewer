@@ -1,3 +1,6 @@
+// frontend/src/components/SettingsModal.tsx: 设置模态框组件。
+// 说明：提供应用级设置（如轮询间隔、UI 选项或快照管理）的界面，包含确认/取消逻辑与本地存储交互。
+// 目的：设置如何影响全局状态与持久化，避免在此处放置长时间阻塞的同步操作。
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import {

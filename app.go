@@ -1,3 +1,6 @@
+// app.go: Wails 暴露给前端的方法集合。
+// 说明：定义应用层 API（如 GetAvailablePorts、GetElectricalData、StartPolling 等），供前端通过 window.go.main.App 调用。
+// 目的：前端与后端交互的边界与主要入口；请勿随意修改暴露方法签名以免破坏前端调用。
 package main
 
 import (

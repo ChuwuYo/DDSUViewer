@@ -1,3 +1,6 @@
+// frontend/src/theme/colors.ts: 主题颜色定义。
+// 说明：集中管理应用使用的颜色变量（供 Chakra UI 或自定义样式引用），便于统一风格与课堂演示主题设计。
+// 目的：通过集中化主题提高可维护性，修改颜色时请同步检查组件样式影响。
 // Material Design 3 色彩体系
 export const mdColors = {
   primary: 'rgb(65 95 145)',

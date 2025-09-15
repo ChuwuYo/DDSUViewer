@@ -1,3 +1,6 @@
+// frontend/src/components/ElectricalDataPanel.tsx: 电参显示面板。
+// 说明：从 appStore 读取实时电参并渲染多个数据卡片（电压、电流、功率等），负责格式化显示与单位处理。
+// 目的：前端如何消费 store 数据与组件渲染，避免在此处引入副作用或直接调用后端 API。
 import { Box, Card, SimpleGrid, Text, Badge, Flex } from '@chakra-ui/react';
 import { useAppStore } from '../hooks/usePolling';
 import { mdColors, dataColors } from '../theme/colors';

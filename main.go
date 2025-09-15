@@ -1,3 +1,6 @@
+// main.go: Wails 应用入口。
+// 说明：负责创建并启动 Wails 应用，绑定 App 实例并嵌入前端 dist 作为静态资源。
+// 目的：用于项目启动流程与入口逻辑，勿改动启动相关代码以免破坏运行。
 package main
 
 import (

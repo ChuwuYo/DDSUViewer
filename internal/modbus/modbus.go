@@ -1,3 +1,6 @@
+// internal/modbus/modbus.go: Modbus 协议实现。
+// 说明：负责构建 Modbus RTU 请求帧（含 CRC16）、解析设备响应、处理异常码与寄存器读写语义，供 poller/serial 层调用。
+// 目的：Modbus RTU 帧结构与校验要点，修改此文件时请谨慎保持字节序、超时与重传策略一致以免影响通信稳定性。
 package modbus
 
 import (

@@ -1,3 +1,6 @@
+// frontend/src/components/StatusPanel.tsx: 连接与状态面板。
+// 说明：显示当前串口连接状态、轮询状态与简要错误信息，帮助用户了解系统健康状况。
+// 目的：将诊断信息呈现给用户，并在出现连接问题时提供简单反馈。
 import { Box, Card, Text, Badge, VStack, HStack } from '@chakra-ui/react';
 import { useAppStore } from '../hooks/usePolling';
 import { mdColors } from '../theme/colors';

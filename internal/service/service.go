@@ -1,3 +1,6 @@
+// internal/service/service.go: 服务层（Service）。
+// 说明：管理串口配置（SerialConfig）、连接与 poller，负责启动/停止轮询、接收 poller 输出并将解析后的电参数据保存到 lastData，同时实现订阅/广播给前端调用者或内部组件。
+// 目的：用于后端数据流与职责划分，便于理解 service 如何协调 serial、poller 与上层 API。请在修改并发逻辑前确认对 mutex 与 channel 的影响。
 package service
 
 import (

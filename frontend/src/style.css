@@ -1,3 +1,6 @@
+/* frontend/src/style.css: 应用全局样式（独立文件）。
+说明：包含项目的基础 CSS 规则与轻量样式补丁，通常与 App.css 配合使用以实现布局和主题微调。
+目的：在项目中分离样式文件以便管理；避免在此处添加复杂选择器或大量重置样式。 */
 @font-face {
     font-family: 'OPlusSans30Light';
     src: url('/OPlusSans30-Light.woff2') format('woff2');

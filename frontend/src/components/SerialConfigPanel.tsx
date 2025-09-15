@@ -1,3 +1,6 @@
+// frontend/src/components/SerialConfigPanel.tsx: 串口配置面板组件。
+// 说明：提供串口列表、波特率、从站地址等配置项的 UI，用户操作后调用后端 UpdateSerialConfig、StartPolling/StopPolling 等方法。
+// 目的：前端如何收集用户配置并触发后端动作；修改此组件时请注意保持对 store 的依赖与事件调用一致性。
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Box, 

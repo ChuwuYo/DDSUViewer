@@ -1,3 +1,6 @@
+// internal/protocol_detector/detector.go: 协议检测器（Protocol Detector）。
+// 说明：负责根据接收到的字节流或寄存器模式判断设备使用的协议（例如 Modbus RTU），用于在多协议环境下选择正确的解析与处理逻辑。
+// 目的：如何在串口多协议场景中进行协议识别与路由，修改此文件时请确保检测规则对常见异常与噪声具有鲁棒性。
 package protocol_detector
 
 import (

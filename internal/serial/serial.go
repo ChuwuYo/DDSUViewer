@@ -1,3 +1,6 @@
+// internal/serial/serial.go: 串口抽象与读写封装。
+// 说明：封装底层串口打开/关闭、读写、超时与并发保护（mutex），并将低级字节流交给上层 poller 使用。
+// 目的：如何安全地封装外设 I/O，注意资源释放、错误传播与并发访问控制，不要在此处直接做业务解析。
 package serial
 
 import (

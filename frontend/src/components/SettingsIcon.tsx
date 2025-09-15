@@ -1,3 +1,6 @@
+// frontend/src/components/SettingsIcon.tsx: 设置按钮图标组件。
+// 说明：作为触发 SettingsModal 的 UI 控件，保持无副作用并仅负责响应点击事件以打开模态框。
+// 目的：小型无状态组件的实现，避免在此文件放置复杂逻辑。
 import { Icon } from '@chakra-ui/react';
 import { createIcon } from '@chakra-ui/react';
 

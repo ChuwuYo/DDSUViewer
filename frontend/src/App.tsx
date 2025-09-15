@@ -1,3 +1,6 @@
+// frontend/src/App.tsx: 前端主组件入口。
+// 说明：负责挂载应用主布局、主题与全局状态（如 store），并组合各子组件（SerialConfigPanel、ElectricalDataPanel 等）。
+// 目的：前端入口与组件层次结构，修改前请确认不会破坏渲染或全局样式。
 import React, { useState } from 'react';
 import { Box, Heading, Grid, GridItem, Flex, Spacer, Badge, Image, Text, IconButton } from '@chakra-ui/react';
 import { ElectricalDataPanel } from './components/ElectricalDataPanel';

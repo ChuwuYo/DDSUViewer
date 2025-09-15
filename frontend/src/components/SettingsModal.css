@@ -1,3 +1,6 @@
+/* frontend/src/components/SettingsModal.css: 设置模态框样式。
+说明：包含 SettingsModal 组件的局部样式，用于控制模态框布局、间距与响应式表现。
+目的：组件级样式的组织方式，避免在此处放置全局选择器以防污染全局样式。 */
 /* From Uiverse.io by andrew-demchenk0 (adapted) */
 .switch {
   --input-focus:rgb(45, 191, 240);
